@@ -2,3 +2,4 @@ node_modules/
 log/
 .vscode/
 .jsconfig.json
+__pycache__/
