@@ -16,35 +16,30 @@ macs.getAll = function (req, res) {
 };
 
 macs.addMacs = function (req, res) {
-    var operationError = false;
 
-    req.body.forEach(function (item) {
-        var sample = {
-            mac: item.mac,
-            origin: [{
-                ID: item.origin.ID,
-                time: _dateStringDate(item.origin.time)
-            }],
-            device: item.device
-        };
+    var sample = {
+        mac: req.body.mac,
+        origin: [{
+            ID: req.body.origin.ID,
+            time: _dateStringDate(req.body.origin.time)
+        }],
+        device: req.body.device
+    };
 
-        MacModel.find({ 'mac': sample.mac }, fieldsIngored, function (err, data) {
-            if (data.length === 0) {
-                err = __addMac(sample);
-            } else if (data.length !== 0) {
-                err = __updateMac(sample, data);
-            }
+    MacModel.find({ 'mac': sample.mac }, fieldsIngored, function (err, data) {
+        if (data.length === 0) {
+            err = __addMac(sample);
+        } else if (data.length !== 0) {
+            err = __updateMac(sample, data);
+        }
 
-            if (err) {
-                operationError = true;
-                res.status(500).send(err.message);
-            }
-        });
+        if (err) {
+            res.status(500).send(err.message);
+        } else {
+            res.status(200).send('All data saved correctly');
+
+        }
     });
-
-    if (operationError === false) {
-        res.status(200).send('All data saved correctly');
-    }
 };
 
 macs.findByID = function (req, res) {
