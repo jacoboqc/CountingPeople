@@ -23,7 +23,7 @@ macs.addMacs = function (req, res) {
             mac: item.mac,
             origin: [{
                 ID: item.origin.ID,
-                time: new Date(item.origin.time.year, item.origin.time.month, item.origin.time.day, item.origin.time.hour, item.origin.time.minutes, item.origin.time.seconds)
+                time: _dateStringDate(item.origin.time)
             }],
             device: item.device
         };
@@ -168,6 +168,17 @@ function _dateStringToJSON(dateString) {
         seconds: hour[2]
     };
 }
+
+function _dateStringDate(dateString) {
+    var dateSplit = dateString.split('-');
+    var date = dateSplit[0].split('/');
+    var hour = dateSplit[1].split(':');
+
+    if (date.length !== 3 && hour.length !== 3) return null;
+
+    return new Date(date[0], date[1], date[2], hour[0], hour[1], hour[2]);
+}
+
 
 function __dateStringFormat(dateISO) {
     var dateSplit = dateISO.toISOString().replace('Z', '').split('T');
