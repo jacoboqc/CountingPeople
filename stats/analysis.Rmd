@@ -26,14 +26,16 @@ Since this data is random and each timestamp a mac is generated with an uniform 
 TODO: normality test
 
 
-# Now: calculate who is inside and who is not. Objective:
- MAC | t1 | t2 | t3 
---------------------
- a  | In | In | out
+Now: calculate who is inside and who is not. Objective:
 ```{r}
 grouped <- data %>% group_by(MAC) %>%   mutate(
-  is_in=as.logical(rank(timestamp) %% 2)) 
+  entering=as.logical(rank(timestamp) %% 2))
 grouped[(grouped$MAC=="90b7"),]
+accumulated <- ungroup(grouped) %>% mutate(
+  inside=cumsum(entering)-cumsum(!entering))
+head(accumulated,40)
+accumulated[(accumulated$MAC=="90b7"),]
+smoothScatter(accumulated$timestamp, accumulated$inside)
 
 ```
 
