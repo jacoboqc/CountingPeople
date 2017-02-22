@@ -1,0 +1,42 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+Introductory analysis. Situation: people going inside and outside of a discoteque through two gates
+```{r}
+data <- read.csv("data.csv")
+library(dplyr)
+library(tidyr)
+barplot(table(data$receptor))
+num_macs <- count(data, MAC)$n
+mean(num_macs)
+sd(num_macs)
+qqnorm(num_macs)
+qqline(num_macs)
+```
+It seems that the distribution the repetition of macs is a bit right-skewed. Seeing it in a histogramm, we can confirm this:
+```{r}
+hist(num_macs, freq = F)
+lines(seq(min(num_macs), max(num_macs), 0.1) ,dnorm(seq(min(num_macs), max(num_macs), by = 0.1),  mean = mean(num_macs), sd=sd(num_macs)))
+```
+Since this data is random and each timestamp a mac is generated with an uniform probability between all posibilities, and since the times a mac shows up is a sum of uniforms, due to the law of big numbers we can asume normality. 
+TODO: normality test
+
+
+# Now: calculate who is inside and who is not. Objective:
+ MAC | t1 | t2 | t3 
+--------------------
+ a  | In | In | out
+```{r}
+grouped <- data %>% group_by(MAC) %>%   mutate(
+  is_in=as.logical(rank(timestamp) %% 2)) 
+grouped[(grouped$MAC=="90b7"),]
+
+```
+
+
+
+
