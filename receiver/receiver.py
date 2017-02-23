@@ -11,28 +11,35 @@ if len(sys.argv) > 1 and sys.argv[1] == 'help':
     print ('Config file must be placed in the same directory and named `default.conf`.')
     sys.exit()
 
-c = configparser.ConfigParser()
-c.read('default.conf')
-id = c.getint('general', 'Receiver ID')
-u = c.get('general', 'API URL')
-p = c.get('general', 'API Port')
-
-if c.get('general', 'Mode') == 'live':
-    i = c.get('live', 'Interface')
-elif c.get('general', 'Mode') == 'file':
-    f = c.get('file', 'File Name')
-
 print ('Starting WiFi sniffer...')
-print ('Using interface', i)
 
-capture = pyshark.LiveCapture(interface=i, display_filter='wlan.fc.type_subtype==4')
+config = configparser.ConfigParser()
+config.read('default.conf')
+id = config.getint('general', 'Receiver ID')
+url = config.get('general', 'API URL')
+port = config.get('general', 'API Port')
+mode = config.get('general', 'Mode')
+
+def getmac(packet):
+    mac = packet.wlan.sa
+    time_ = time.strftime("%x-%X")
+    json = {"mac":mac, "origin":{"id":id, "time":time_}, "device":"Android"}
+    requests.put('http://'+url+':'+port+'/macs', json=json)
+    print (mac, time_)
+
 try:
-    for packet in capture.sniff_continuously():
-        m = packet.wlan.sa
-        t = time.strftime("%x-%X")
-        j = {"mac":m, "origin":{"id":id, "time":t}, "device":"Android"}
-        requests.put('http://'+u+':'+p+'/macs', json=j)
-        print (m, t)
+    if mode == 'live':
+        interface = config.get('live', 'Interface')
+        print ('Using interface', interface)
+        capture = pyshark.LiveCapture(interface=interface, display_filter='wlan.fc.type_subtype==4')
+        for packet in capture.sniff_continuously():
+            getmac(packet)
+    elif mode == 'file':
+        file = config.get('file', 'File Name')
+        print ('Using file', file)
+        capture = pyshark.FileCapture(input_file=file, display_filter='wlan.fc.type_subtype==4')
+        for packet in capture:
+            getmac(packet)
 except KeyboardInterrupt:
-    print ('Shutting down...')
-    sys.exit()
+        print ('Shutting down...')
+        sys.exit()
