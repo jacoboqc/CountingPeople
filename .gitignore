@@ -1,4 +1,11 @@
+#Node.js
 node_modules/
 log/
 .vscode/
 .jsconfig.json
+
+#Python
+__pycache__/
+
+#Vagrant
+.vagrant/
