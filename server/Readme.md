@@ -63,14 +63,14 @@ Run the command 'node app.js' in the root directory of the module.
         Request body form:
 
         ```JSON
-        [{
+        {
             "mac":"F0:E1:D2:C3:B4:A5",
-            "origin":[{
+            "origin":{
                 "ID":"1",
                 "time": "1995/07/29-18:30:56"
-            }],
+            },
             "device": "Android"
-        }]
+        }
         ```
 
 - /macs/id/:id

@@ -11,10 +11,17 @@ var colors = {
 
 logger.addColors(colors);
 logger.default.transports.console.colorize = true;
-//logger.default.transports.console.timestamp = true;
-logger.add(logger.transports.File, {filename: config.logFile});
-    
-logger.info('info', 'Init system');
-logger.info('info', 'Debugger level: ' + logger.level);
+logger.default.transports.console.timestamp = true;
+
+if (config.logFile === true) {
+    logger.add(logger.transports.File, { filename: config.logFilePath });
+}
+
+if (config.logConsole !== true) {
+    logger.remove(logger.default.transports.console);
+}
+
+logger.log('info', 'Init system');
+logger.log('info', 'Debugger level: ' + logger.level);
 
 module.exports = logger;

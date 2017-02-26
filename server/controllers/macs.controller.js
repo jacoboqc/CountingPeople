@@ -6,8 +6,8 @@ var fieldsIngored = '-__v -_id -origin._id';
 macs.getAll = function (req, res) {
     MacModel.find({}, fieldsIngored, function (err, data) {
         if (err) {
-            res.status(500).send(err.message);
-            logger.log('error', err.message);
+            res.status(500).send('Internal error');
+            logger.log('error', 'ERROR FINDING IN DATABASE: ' + err.message);
         } else {
             data = __parseDBResponseToJSON(data);
             res.status(200).json(data);
@@ -16,7 +16,6 @@ macs.getAll = function (req, res) {
 };
 
 macs.addMacs = function (req, res) {
-
     var sample = {
         mac: req.body.mac,
         origin: [{
@@ -26,62 +25,46 @@ macs.addMacs = function (req, res) {
         device: req.body.device
     };
 
-    MacModel.find({ 'mac': sample.mac }, fieldsIngored, function (err, data) {
-        if (data.length === 0) {
-            err = __addMac(sample);
-        } else if (data.length !== 0) {
-            err = __updateMac(sample, data);
-        }
-
-        if (err) {
-            res.status(500).send(err.message);
+    try {
+        if (Object.prototype.toString.call(_dateStringDate(req.body.origin.time)) !== '[object Date]') {
+            res.status(400).send('Invalid date');
+            logger.log('error', 'Invalid date');
+        } else if (typeof sample.mac !== 'string' || sample.mac.length !== 17 || sample.mac.split(':').length !== 6) {
+            res.status(400).send('Invalid MAC');
+            logger.log('error', 'Invalid MAC');
         } else {
-            res.status(200).send('All data saved correctly');
-
+            __findMAC(sample, res);
         }
-    });
+    } catch (err) {
+        res.status(400).send('Invalid format');
+        logger.log('error', err);
+    }
+
 };
 
 macs.findByID = function (req, res) {
     var id = req.params.id;
-
-    MacModel.find({ 'origin.ID': id }, fieldsIngored + ' -origin.ID', function (err, data) {
-        if (err) {
-            res.status(500).send(err.message);
-            logger.log('error', err.message);
-        } else {
-            data = __parseDBResponseToJSON(data);
-            res.status(200).json(data);
-        }
-    });
+    __findDB({ 'origin.ID': id }, ' -origin.ID', res);
 };
 
 macs.findByDevice = function (req, res) {
     var device = req.params.device;
-
-    MacModel.find({ 'device': device }, fieldsIngored + ' -device', function (err, data) {
-        if (err) {
-            res.status(500).send(err.message);
-            logger.log('error', err.message);
-        } else {
-            data = __parseDBResponseToJSON(data);
-            res.status(200).json(data);
-        }
-    });
+    __findDB({ 'device': device }, ' -device', res);
 };
 
 macs.findMac = function (req, res) {
     var mac = req.params.mac;
-
-    MacModel.find({ 'mac': mac }, fieldsIngored + ' -mac', function (err, data) {
-        if (err) {
-            res.status(500).send(err.message);
-            logger.log('error', err.message);
+    try {
+        if (typeof mac === 'string' && mac.length === 17 && mac.split(':').length === 6) {
+            __findDB({ 'mac': mac }, ' -mac', res);
         } else {
-            data = __parseDBResponseToJSON(data);
-            res.status(200).json(data[0]);
+            res.status(400).send('Invalid MAC');
+            logger.log('error', 'Invalid MAC');
         }
-    });
+    } catch (err) {
+        res.status(400).send('Invalid format');
+        logger.log('error', err);
+    }
 };
 
 macs.findBeforeEnd = function (end, res) {
@@ -89,19 +72,16 @@ macs.findBeforeEnd = function (end, res) {
 
     if (end === null) {
         logger.log('error', 'End empty');
-        res.status(500).send('End empty');
+        res.status(400).send('End empty');
     } else {
         var endDate = new Date(end.year, end.month, end.day, end.hour, end.minutes, end.seconds);
 
-        MacModel.find({ 'origin.time': { $lte: endDate } }, fieldsIngored, function (err, data) {
-            if (err) {
-                res.status(500).send(err.message);
-                logger.log('error', err.message);
-            } else {
-                data = __parseDBResponseToJSON(data);
-                res.status(200).json(data);
-            }
-        });
+        if (Object.prototype.toString.call(endDate) !== '[object Date]') {
+            logger.log('error', 'Invalid Date');
+            res.status(400).send('Invalid Date');
+        } else {
+            __findDB({ 'origin.time': { $lte: endDate } }, '', res);
+        }
     }
 };
 
@@ -110,18 +90,16 @@ macs.findAfterStart = function (start, res) {
 
     if (start === null) {
         logger.log('error', 'Start empty');
-        res.status(500).send('Start empty');
+        res.status(400).send('Start empty');
     } else {
         var startDate = new Date(start.year, start.month, start.day, start.hour, start.minutes, start.seconds);
-        MacModel.find({ 'origin.time': { $gte: startDate } }, fieldsIngored, function (err, data) {
-            if (err) {
-                res.status(500).send(err.message);
-                logger.log('error', err.message);
-            } else {
-                data = __parseDBResponseToJSON(data);
-                res.status(200).json(data);
-            }
-        });
+
+        if (Object.prototype.toString.call(startDate) !== '[object Date]') {
+            logger.log('error', 'Invalid Date');
+            res.status(400).send('Invalid Date');
+        } else {
+            __findDB({ 'origin.time': { $gte: startDate } }, '', res);
+        }
     }
 };
 
@@ -129,28 +107,34 @@ macs.findByInterval = function (start, end, res) {
     start = _dateStringToJSON(start);
     end = _dateStringToJSON(end);
     if (start === null || end === null) {
-        logger.log('error', 'Start/End empty');
-        res.status(500).send('Start/End empty');
+        logger.log('error', 'Start/End empty or cannot parse');
+        res.status(400).send('Start/End empty or cannot parse');
     } else {
+
         var startDate = new Date(start.year, start.month, start.day, start.hour, start.minutes, start.seconds);
         var endDate = new Date(end.year, end.month, end.day, end.hour, end.minutes, end.seconds);
 
-        MacModel.find({ 'origin.time': { $gte: startDate, $lte: endDate } }, fieldsIngored, function (err, data) {
-            if (err) {
-                res.status(500).send(err.message);
-                logger.log('error', err.message);
-            } else {
-                data = __parseDBResponseToJSON(data);
-                res.status(200).json(data);
-            }
-        });
+        if (Object.prototype.toString.call(startDate) !== '[object Date]' || Object.prototype.toString.call(startDate) !== '[object Date]') {
+            logger.log('error', 'Invalid Date');
+            res.status(400).send('Invalid Date');
+        } else {
+            __findDB({ 'origin.time': { $gte: startDate, $lte: endDate } }, '', res);
+        }
     }
 };
 
 function _dateStringToJSON(dateString) {
-    var dateSplit = JSON.parse(dateString).time.split('-');
-    var date = dateSplit[0].split('/');
-    var hour = dateSplit[1].split(':');
+    var dateSplit, date, hour;
+
+    try {
+        dateSplit = JSON.parse(dateString).time.split('-');
+        date = dateSplit[0].split('/');
+        hour = dateSplit[1].split(':');
+
+    } catch (err) {
+        logger.log('error', err);
+        return null;
+    }
 
     if (date.length !== 3 && hour.length !== 3) return null;
 
@@ -165,9 +149,17 @@ function _dateStringToJSON(dateString) {
 }
 
 function _dateStringDate(dateString) {
-    var dateSplit = dateString.split('-');
-    var date = dateSplit[0].split('/');
-    var hour = dateSplit[1].split(':');
+    var dateSplit, date, hour;
+    try {
+        dateSplit = dateString.split('-');
+        if (dateSplit.length !== 2) return null;
+
+        date = dateSplit[0].split('/');
+        hour = dateSplit[1].split(':');
+    } catch (err) {
+        logger.log('error', err);
+        return null;
+    }
 
     if (date.length !== 3 && hour.length !== 3) return null;
 
@@ -176,14 +168,12 @@ function _dateStringDate(dateString) {
 
 
 function __dateStringFormat(dateISO) {
-    var dateSplit = dateISO.toISOString().replace('Z', '').split('T');
-    var date = dateSplit[0].split('-');
-    var hour = dateSplit[1].split(':');
+    var dateSplit, date, hour;
+    
+    dateSplit = dateISO.toISOString().replace('Z', '').split('T');
+    date = dateSplit[0].split('-');
+    hour = dateSplit[1].split(':');
 
-    if (date.length !== 3 && hour.length !== 3) {
-        logger.log('error', 'Cannot parse date in request');
-        return null;
-    }
     return date[0] + '/' + date[1] + '/' + date[2] + '-' + hour[0] + ':' + hour[1] + ':' + hour[2].split('.')[0];
 }
 
@@ -225,6 +215,35 @@ function __updateMac(newData, oldData) {
     MacModel.update({ 'mac': newData.mac }, newData, {}, function (err, num) {
         if (err) {
             return err;
+        }
+    });
+}
+
+function __findMAC(sample, res) {
+    MacModel.find({ 'mac': sample.mac }, fieldsIngored, function (err, data) {
+        if (data.length === 0) {
+            err = __addMac(sample);
+        } else {
+            err = __updateMac(sample, data);
+        }
+
+        if (err) {
+            res.status(500).send('Internal error');
+            logger.log('error', 'ERROR FINDING IN DATABASE: ' + err.message);
+        } else {
+            res.status(200).send('All data saved correctly');
+        }
+    });
+}
+
+function __findDB(query, ignore, res) {
+    MacModel.find(query, fieldsIngored + ignore, function (err, data) {
+        if (err) {
+            res.status(500).send('Internal error');
+            logger.log('error', 'ERROR FINDING IN DATABASE: ' + err.message);
+        } else {
+            data = __parseDBResponseToJSON(data);
+            res.status(200).json(data);
         }
     });
 }
