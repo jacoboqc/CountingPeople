@@ -1,10 +1,11 @@
 #!/usr/bin/python
-
 import sys
 import pyshark
 import requests
 import time
 import configparser
+import os.path
+import urllib
 
 if len(sys.argv) > 1 and sys.argv[1] == 'help':
     print ('Usage: receiver.py [help]')
@@ -22,10 +23,19 @@ mode = config.get('general', 'Mode')
 
 def getmac(packet):
     mac = packet.wlan.sa
-    time_ = time.strftime("%x-%X")
-    json = {"mac":mac, "origin":{"id":id, "time":time_}, "device":"Android"}
-    requests.put('http://'+url+':'+port+'/macs', json=json)
-    print (mac, time_)
+    if checkmac(mac):
+        time_ = time.strftime("%x-%X")
+        json = {"mac":mac, "origin":{"id":id, "time":time_}, "device":"Android"}
+        requests.put('http://'+url+':'+port+'/macs', json=json)
+        print (mac, time_)
+
+def checkmac(mac):
+    if not os.path.isfile("vendorDB"):
+        try:
+            urllib.request.urlretrieve("https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf", "vendorDB")
+        except Exception:
+            print ("Couldn't download vendor DB, next step will fail...")
+    return mac[:8].upper() in open('vendorDB').read()
 
 try:
     if mode == 'live':
