@@ -95,9 +95,9 @@ function updateData() {
 
 
     jQuery.get('http://localhost:3000/macs/interval?start={"time":"' + dateRequestStart + '"}&end={"time":"' + dateRequestEnd + '"}', function (response) {
-        //jQuery.get('http://localhost:3000/macs/interval?start={"time":"1993/01/01-22:10:30"}&end={"time":"2000/01/01-22:10:30"}', function (response) {
-        //series.addPoint([x, response.length], true, false);
-        series.addPoint([x, Math.random()], true, false);
+    //jQuery.get('http://localhost:3000/macs/interval?start={"time":"1993/01/01-22:10:30"}&end={"time":"2000/01/01-22:10:30"}', function (response) {
+        series.addPoint([x, response.length], true, false);
+        //series.addPoint([x, Math.random()], true, false);
 
     });
 }
