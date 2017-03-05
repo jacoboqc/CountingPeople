@@ -7,6 +7,8 @@ var express = require('express'),
     macsModel = require('./models/macs.model'),
     config = require('./config/config.js');
 
+var __dirname = '/home/marcos/Repos/CountingPeople/server/';
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(methodOverride());
@@ -28,13 +30,10 @@ logger.log('info', 'Database Connected');
 /************ */
 
 //************ Routing ***********/
-var router = express.Router();
-router.get('/', function (req, res) {
-    res.send('Counting People Server');
-});
+
+app.use('/', express.static(__dirname + '/public'));
 
 app.use('/macs', require('./routes/macs.routes'));
-app.use(router);
 ////////////
 
 app.listen(config.port, function () {
