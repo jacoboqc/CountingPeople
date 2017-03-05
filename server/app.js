@@ -29,8 +29,9 @@ logger.log('info', 'Database Connected');
 
 //************ Routing ***********/
 
-app.use('/', express.static('public'));
-
+app.use('/', express.static(__dirname + '/public'));
+app.use('/jquery', express.static(__dirname + '/node_modules/jquery/dist/'));
+app.use('/highstock', express.static(__dirname + '/node_modules/highcharts/'));
 app.use('/macs', require('./routes/macs.routes'));
 ////////////
 
