@@ -23,7 +23,7 @@ mode = config.get('general', 'Mode')
 
 def getmac(packet):
     mac = packet.wlan.sa
-    hash = hashlib.sha256(mac.encode('utf-8'))
+    hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
     time_ = time.strftime("%x-%X")
     json = {"mac":hash.hexdigest(), "origin":{"id":id, "time":time_}, "device":"Android"}
     requests.put('http://'+url+':'+port+'/macs', json=json)
