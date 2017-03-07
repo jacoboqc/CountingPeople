@@ -5,6 +5,8 @@
     "body-parser": "^1.5.1",
     "eslint": "^3.15.0",
     "express": "^4.7.1",
+    "highcharts": "^5.0.7",
+    "jquery": "^3.1.1",
     "method-override": "^2.1.2",
     "mongoose": "~3.6.11",
     "winston": "^2.3.1"
