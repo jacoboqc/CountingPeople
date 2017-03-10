@@ -1,5 +1,7 @@
 var series;
-var timeRequest = 1000;
+var series;
+
+var timeRequest = 5000;
 $(document).ready(function () {
     Highcharts.setOptions({
         global: {
@@ -7,7 +9,12 @@ $(document).ready(function () {
         }
     });
 
-    Highcharts.stockChart('container', {
+    graphics();
+});
+
+
+function graphics() {
+    Highcharts.stockChart('totalPeople', {
         chart: {
             type: 'spline',
 
@@ -16,24 +23,21 @@ $(document).ready(function () {
                 load: function () {
 
                     // set up the updating of the chart each second
-                    series = this.series[0];
+                    series = this.series;
                     setInterval(updateData, timeRequest);
                 }
             }
         },
         title: {
-            text: 'Counting People'
-        },
-
-        subtitle: {
-            text: 'People activity in the system in real time'
+            text: 'Total MACs on system vs Total MACS per origins',
+            align: 'Left'
         },
 
         xAxis: {
             title: {
                 text: 'Time',
                 style: {
-                    fontSize:'15px'
+                    fontSize: '15px'
                 }
             },
             type: 'datetime',
@@ -44,7 +48,7 @@ $(document).ready(function () {
             title: {
                 text: 'People',
                 style: {
-                    fontSize:'15px'
+                    fontSize: '15px'
                 }
             },
             plotLines: [{
@@ -58,14 +62,29 @@ $(document).ready(function () {
         tooltip: {
             formatter: function () {
                 return '<b>' + Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
-                    'People: ' + Highcharts.numberFormat(this.y, 0);
+                    'Activity: ' + Highcharts.numberFormat(this.points[2].y, 0) + '<br/>' +
+                    'Total people: ' + Highcharts.numberFormat(this.points[0].y, 0) + '<br/>' +
+                    'Total origins: ' + Highcharts.numberFormat(this.points[1].y, 0) + '<br/>' +
+                    'Percentage of People in multiple origins ' + Highcharts.numberFormat(this.points[0].y / this.points[1].y * 100, 2) + '%';
             }
         },
 
         series: [{
-            name: 'People',
+            name: 'Total people on system',
+            data: []
+        },
+        {
+            name: 'Total people on system per origin',
+            data: []
+        },
+        {
+            name: 'Activity on the system',
             data: []
         }],
+
+        legend: {
+            enabled: true
+        },
 
         rangeSelector: {
             buttons: [{
@@ -84,7 +103,7 @@ $(document).ready(function () {
             selected: 0
         },
     });
-});
+}
 
 
 function updateData() {
@@ -95,9 +114,21 @@ function updateData() {
 
 
     jQuery.get('http://localhost:3000/macs/interval?start={"time":"' + dateRequestStart + '"}&end={"time":"' + dateRequestEnd + '"}', function (response) {
-    //jQuery.get('http://localhost:3000/macs/interval?start={"time":"1993/01/01-22:10:30"}&end={"time":"2000/01/01-22:10:30"}', function (response) {
-        series.addPoint([x, response.length], true, false);
+        //console.warn(response);
+        //jQuery.get('http://localhost:3000/macs/interval?start={"time":"1993/01/01-22:10:30"}&end={"time":"2000/01/01-22:10:30"}', function (response) {
+        series[2].addPoint([x, response.length], true, false);
         //series.addPoint([x, Math.random()], true, false);
 
+    });
+
+    jQuery.get('http://localhost:3000/macs', function (response) {
+        series[0].addPoint([x, response.length], true, false);
+
+        let totalOrigins = 0;
+        response.forEach(function (mac) {
+            totalOrigins += mac.origin.length;
+        }, this);
+
+        series[1].addPoint([x, totalOrigins], true, false);
     });
 }
