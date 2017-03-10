@@ -36,9 +36,6 @@ app.use('/macs', require('./routes/macs.routes'));
 ////////////
 
 app.listen(config.port, function () {
-    //var today = new Date();
-    //var myToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
-
     logger.log('info', 'Node server running on http://localhost:3000');
 });
 
