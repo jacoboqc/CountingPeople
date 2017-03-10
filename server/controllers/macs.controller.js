@@ -2,6 +2,7 @@ var MacModel = db.model('macs');
 var logger = require('../logger.js');
 var macs = {};
 var fieldsIngored = '-__v -_id -origin._id';
+var macRegex = '[A-Fa-f0-9]{64}';
 
 macs.getAll = function (req, res) {
     MacModel.find({}, fieldsIngored, function (err, data) {
@@ -29,7 +30,7 @@ macs.addMacs = function (req, res) {
         if (Object.prototype.toString.call(_dateStringDate(req.body.origin.time)) !== '[object Date]') {
             res.status(400).send('Invalid date');
             logger.log('error', 'Invalid date');
-        } else if (typeof sample.mac !== 'string' || sample.mac.length !== 17 || sample.mac.split(':').length !== 6) {
+        } else if (typeof sample.mac !== 'string' || !sample.mac.match(macRegex)) {
             res.status(400).send('Invalid MAC');
             logger.log('error', 'Invalid MAC');
         } else {
@@ -55,7 +56,7 @@ macs.findByDevice = function (req, res) {
 macs.findMac = function (req, res) {
     var mac = req.params.mac;
     try {
-        if (typeof mac === 'string' && mac.length === 17 && mac.split(':').length === 6) {
+        if (typeof mac === 'string' && mac.match(macRegex)) {
             __findDB({ 'mac': mac }, ' -mac', res);
         } else {
             res.status(400).send('Invalid MAC');
@@ -114,7 +115,7 @@ macs.findByInterval = function (start, end, res) {
         var startDate = new Date(start.year, start.month, start.day, start.hour, start.minutes, start.seconds);
         var endDate = new Date(end.year, end.month, end.day, end.hour, end.minutes, end.seconds);
 
-        if (Object.prototype.toString.call(startDate) !== '[object Date]' || Object.prototype.toString.call(startDate) !== '[object Date]') {
+        if (Object.prototype.toString.call(startDate) !== '[object Date]' || Object.prototype.toString.call(endDate) !== '[object Date]') {
             logger.log('error', 'Invalid Date');
             res.status(400).send('Invalid Date');
         } else {
