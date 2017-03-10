@@ -1,3 +1,5 @@
+var json2csv = require('json2csv');
+var fs = require('fs');
 var MacModel = db.model('macs');
 var logger = require('../logger.js');
 var macs = {};
@@ -124,6 +126,25 @@ macs.findByInterval = function (start, end, res) {
     }
 };
 
+macs.getCSVs = function (res) {
+    MacModel.find({}, fieldsIngored, function (err, data) {
+        if (err) {
+            res.status(500).send('Internal error');
+            logger.log('error', 'ERROR FINDING IN DATABASE: ' + err.message);
+        } else {
+            data = __parseDBResponseToJSON(data);
+            try {
+                var to_CSV = __toCSV(data);
+                var CSV = json2csv({ data: to_CSV });
+                res.status(200).send(CSV);
+            } catch (err) {
+                res.status(500).send('Cannot send CSV');
+                logger.info('error', err);
+            }
+        }
+    });
+};
+
 function _dateStringToJSON(dateString) {
     var dateSplit, date, hour;
 
@@ -170,7 +191,7 @@ function _dateStringDate(dateString) {
 
 function __dateStringFormat(dateISO) {
     var dateSplit, date, hour;
-    
+
     dateSplit = dateISO.toISOString().replace('Z', '').split('T');
     date = dateSplit[0].split('-');
     hour = dateSplit[1].split(':');
@@ -247,6 +268,24 @@ function __findDB(query, ignore, res) {
             res.status(200).json(data);
         }
     });
+}
+
+function __toCSV(data) {
+    var dataCSV = [];
+    data.forEach(function (mac) {
+        var macTemp = {
+            mac: mac.mac,
+            device: mac.device,
+        };
+        mac.origin.forEach(function (origin) {
+            console.log(origin);
+            macTemp.ID = origin.ID;
+            macTemp.time = origin.time;
+            dataCSV.push(macTemp);
+        }, this);
+    }, this);
+
+    return dataCSV;
 }
 
 module.exports = macs;
