@@ -5,6 +5,7 @@ import pyshark
 import requests
 import time
 import configparser
+import hashlib
 
 if len(sys.argv) > 1 and sys.argv[1] == 'help':
     print ('Usage: receiver.py [help]')
@@ -22,10 +23,11 @@ mode = config.get('general', 'Mode')
 
 def getmac(packet):
     mac = packet.wlan.sa
-    time_ = time.strftime("%x-%X")
-    json = {"mac":mac, "origin":{"id":id, "time":time_}, "device":"Android"}
+    hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
+    time_ = time.strftime("%Y/%m/%d-%X")
+    json = {"mac":hash.hexdigest(), "origin":{"id":id, "time":time_}, "device":"Android"}
     requests.put('http://'+url+':'+port+'/macs', json=json)
-    print (mac, time_)
+    print (mac, hash.hexdigest(), time_)
 
 try:
     if mode == 'live':
