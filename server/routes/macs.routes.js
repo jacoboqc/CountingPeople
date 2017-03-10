@@ -42,6 +42,8 @@ router.get('/', function (req, res) { //devuelve todos los datos
         logger.log('debug', 'by interval');
         mac.findByInterval(start, end, res);
     }
+}).get('/csv', function(req, res) {
+    mac.getCSVs(res);
 });
 
 module.exports = router;
