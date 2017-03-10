@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #Node.js
 node_modules/
 log/
@@ -10,3 +9,6 @@ __pycache__/
 
 #Vagrant
 .vagrant/
+
+# Other
+.swp
