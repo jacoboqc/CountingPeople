@@ -1,7 +1,6 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/trusty64"
-  config.vm.network "forwarded_port", guest: 3000, host: 3001
-  config.vm.network "forwarded_port", guest: 27017, host: 2701
+  config.vm.network "forwarded_port", guest: 3000, host: 3000
   config.vm.provision "shell", inline: $script
   config.vm.post_up_message = "Ubuntu Trusty with MongoDB+Node.js is up! Run `vagrant ssh` to login."
 end

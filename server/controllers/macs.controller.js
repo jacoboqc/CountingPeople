@@ -1,7 +1,10 @@
+var json2csv = require('json2csv');
+var fs = require('fs');
 var MacModel = db.model('macs');
 var logger = require('../logger.js');
 var macs = {};
 var fieldsIngored = '-__v -_id -origin._id';
+var macRegex = '[A-Fa-f0-9]{64}';
 
 macs.getAll = function (req, res) {
     MacModel.find({}, fieldsIngored, function (err, data) {
@@ -10,7 +13,18 @@ macs.getAll = function (req, res) {
             logger.log('error', 'ERROR FINDING IN DATABASE: ' + err.message);
         } else {
             data = __parseDBResponseToJSON(data);
-            res.status(200).json(data);
+            if (req.header('Accept') === 'text/csv') {
+                try {
+                    var to_CSV = __toCSV(data);
+                    var CSV = json2csv({ data: to_CSV });
+                    res.status(200).send(CSV);
+                } catch (err) {
+                    res.status(500).send('Cannot send CSV');
+                    logger.info('error', err);
+                }
+            } else {
+                res.status(200).json(data);
+            }
         }
     });
 };
@@ -29,34 +43,33 @@ macs.addMacs = function (req, res) {
         if (Object.prototype.toString.call(_dateStringDate(req.body.origin.time)) !== '[object Date]') {
             res.status(400).send('Invalid date');
             logger.log('error', 'Invalid date');
-        } else if (typeof sample.mac !== 'string' || sample.mac.length !== 17 || sample.mac.split(':').length !== 6) {
+        } else if (typeof sample.mac !== 'string' || !sample.mac.match(macRegex)) {
             res.status(400).send('Invalid MAC');
             logger.log('error', 'Invalid MAC');
         } else {
-            __findMAC(sample, res);
+            __findMAC(sample, req, res);
         }
     } catch (err) {
         res.status(400).send('Invalid format');
         logger.log('error', err);
     }
-
 };
 
 macs.findByID = function (req, res) {
     var id = req.params.id;
-    __findDB({ 'origin.ID': id }, ' -origin.ID', res);
+    __findDB({ 'origin.ID': id }, ' -origin.ID', req, res);
 };
 
 macs.findByDevice = function (req, res) {
     var device = req.params.device;
-    __findDB({ 'device': device }, ' -device', res);
+    __findDB({ 'device': device }, ' -device', req, res);
 };
 
 macs.findMac = function (req, res) {
     var mac = req.params.mac;
     try {
-        if (typeof mac === 'string' && mac.length === 17 && mac.split(':').length === 6) {
-            __findDB({ 'mac': mac }, ' -mac', res);
+        if (typeof mac === 'string' && mac.match(macRegex)) {
+            __findDB({ 'mac': mac }, ' -mac', req, res);
         } else {
             res.status(400).send('Invalid MAC');
             logger.log('error', 'Invalid MAC');
@@ -67,7 +80,7 @@ macs.findMac = function (req, res) {
     }
 };
 
-macs.findBeforeEnd = function (end, res) {
+macs.findBeforeEnd = function (end, req, res) {
     end = _dateStringToJSON(end);
 
     if (end === null) {
@@ -80,12 +93,12 @@ macs.findBeforeEnd = function (end, res) {
             logger.log('error', 'Invalid Date');
             res.status(400).send('Invalid Date');
         } else {
-            __findDB({ 'origin.time': { $lte: endDate } }, '', res);
+            __findDB({ 'origin.time': { $lte: endDate } }, '', req, res);
         }
     }
 };
 
-macs.findAfterStart = function (start, res) {
+macs.findAfterStart = function (start, req, res) {
     start = _dateStringToJSON(start);
 
     if (start === null) {
@@ -98,12 +111,12 @@ macs.findAfterStart = function (start, res) {
             logger.log('error', 'Invalid Date');
             res.status(400).send('Invalid Date');
         } else {
-            __findDB({ 'origin.time': { $gte: startDate } }, '', res);
+            __findDB({ 'origin.time': { $gte: startDate } }, '', req, res);
         }
     }
 };
 
-macs.findByInterval = function (start, end, res) {
+macs.findByInterval = function (start, end, req, res) {
     start = _dateStringToJSON(start);
     end = _dateStringToJSON(end);
     if (start === null || end === null) {
@@ -114,11 +127,11 @@ macs.findByInterval = function (start, end, res) {
         var startDate = new Date(start.year, start.month, start.day, start.hour, start.minutes, start.seconds);
         var endDate = new Date(end.year, end.month, end.day, end.hour, end.minutes, end.seconds);
 
-        if (Object.prototype.toString.call(startDate) !== '[object Date]' || Object.prototype.toString.call(startDate) !== '[object Date]') {
+        if (Object.prototype.toString.call(startDate) !== '[object Date]' || Object.prototype.toString.call(endDate) !== '[object Date]') {
             logger.log('error', 'Invalid Date');
             res.status(400).send('Invalid Date');
         } else {
-            __findDB({ 'origin.time': { $gte: startDate, $lte: endDate } }, '', res);
+            __findDB({ 'origin.time': { $gte: startDate, $lte: endDate } }, '', req, res);
         }
     }
 };
@@ -169,7 +182,7 @@ function _dateStringDate(dateString) {
 
 function __dateStringFormat(dateISO) {
     var dateSplit, date, hour;
-    
+
     dateSplit = dateISO.toISOString().replace('Z', '').split('T');
     date = dateSplit[0].split('-');
     hour = dateSplit[1].split(':');
@@ -219,7 +232,7 @@ function __updateMac(newData, oldData) {
     });
 }
 
-function __findMAC(sample, res) {
+function __findMAC(sample, req, res) {
     MacModel.find({ 'mac': sample.mac }, fieldsIngored, function (err, data) {
         if (data.length === 0) {
             err = __addMac(sample);
@@ -231,21 +244,63 @@ function __findMAC(sample, res) {
             res.status(500).send('Internal error');
             logger.log('error', 'ERROR FINDING IN DATABASE: ' + err.message);
         } else {
+            if (req.header('Accept') === 'text/csv') {
+                try {
+                    var to_CSV = __toCSV(data);
+                    var CSV = json2csv({ data: to_CSV });
+                    res.status(200).send(CSV);
+                } catch (err) {
+                    res.status(500).send('Cannot send CSV');
+                    logger.info('error', err);
+                }
+            } else {
+                res.status(200).json(data);
+            }
             res.status(200).send('All data saved correctly');
         }
     });
 }
 
-function __findDB(query, ignore, res) {
+function __findDB(query, ignore, req, res) {
     MacModel.find(query, fieldsIngored + ignore, function (err, data) {
         if (err) {
             res.status(500).send('Internal error');
             logger.log('error', 'ERROR FINDING IN DATABASE: ' + err.message);
         } else {
             data = __parseDBResponseToJSON(data);
-            res.status(200).json(data);
+
+            if (req.header('Accept') === 'text/csv') {
+                try {
+                    var to_CSV = __toCSV(data);
+                    var CSV = json2csv({ data: to_CSV });
+                    res.status(200).send(CSV);
+                } catch (err) {
+                    res.status(500).send('Cannot send CSV');
+                    logger.info('error', err);
+                }
+            } else {
+                res.status(200).json(data);
+            }
         }
     });
+}
+
+function __toCSV(data) {
+    var dataCSV = [];
+    data.forEach(function (mac) {
+        var macTemp = {
+            mac: mac.mac,
+            device: mac.device,
+        };
+        mac.origin.forEach(function (origin) {
+            console.log(origin);
+            macTemp.ID = origin.ID;
+            macTemp.time = origin.time;
+            dataCSV.push(macTemp);
+        }, this);
+    }, this);
+
+    return dataCSV;
 }
 
 module.exports = macs;

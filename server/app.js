@@ -28,19 +28,14 @@ logger.log('info', 'Database Connected');
 /************ */
 
 //************ Routing ***********/
-var router = express.Router();
-router.get('/', function (req, res) {
-    res.send('Counting People Server');
-});
 
+app.use('/', express.static(__dirname + '/public'));
+app.use('/jquery', express.static(__dirname + '/node_modules/jquery/dist/'));
+app.use('/highstock', express.static(__dirname + '/node_modules/highcharts/'));
 app.use('/macs', require('./routes/macs.routes'));
-app.use(router);
 ////////////
 
 app.listen(config.port, function () {
-    //var today = new Date();
-    //var myToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
-
     logger.log('info', 'Node server running on http://localhost:3000');
 });
 
