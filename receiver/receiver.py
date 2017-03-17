@@ -24,77 +24,22 @@ id = config.getint('general', 'Receiver ID')
 url = config.get('general', 'API URL')
 port = config.get('general', 'API Port')
 mode = config.get('general', 'Mode')
-i = int(0)
-almacenadas = int(0)
-wps = int(0)
-fabricante = int(0)
-asociada = int(0)
-noEnviada = int(0)
-packetList = []
-macList = []
+macList = [] # macJSON = { "mac": "mac", "seq": "seq", "time", "time"}
 INTERVAL = 5
 
 
 def getmac(packet):
     mac = packet.wlan.sa
-    global almacenadas
-    global wps
-    global fabricante
-    global asociada
-    global noEnviada
-    alreadyStored = False
-    for packetStored in packetList:
-        if packet.wlan.sa == packetStored.wlan.sa:
-            packetList.remove(packetStored)
-            packetList.append(packet)
-            alreadyStored = True
-            break
-    try:
-        mac_asociated = asociate_secuence(packet)
-        if alreadyStored is True:
-            almacenadas += 1
-            hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
-            time_ = time.strftime("%Y/%m/%d-%X")
-            json = {"mac": hash.hexdigest(), "origin": {"ID": id, "time": time_},
-                    "device": "Android"}
-            requests.put('http://' + url + ':' + port + '/macs', json=json)
-            return
 
-        elif checkmac(mac):
-            packetList.append(packet)
-            fabricante += 1
-            hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
-            time_ = time.strftime("%Y/%m/%d-%X")
-            json = {"mac": hash.hexdigest(), "origin": {"ID": id, "time": time_},
-                    "device": "Android"}
-            requests.put('http://' + url + ':' + port + '/macs', json=json)
-            return
-        
-        elif mac_asociated is not None:
-            asociada += 1
-            print("MAC capturada ", mac, " MAC asociada ", mac_asociated)
-            hash = hashlib.sha256(
-                (mac_asociated + '_Dr0j4N0C0l4c40_').encode('utf-8'))
-            time_ = time.strftime("%Y/%m/%d-%X")
-            json = {"mac": hash.hexdigest(), "origin": {"ID": id, "time": time_},
-                    "device": "Android"}
-            requests.put('http://' + url + ':' + port + '/macs', json=json)
-            return
-        elif packet.wlan_mgt.wps_uuid_e:
-            packetList.append(packet)
-            wps += 1
-            print(wps)
-            hash = hashlib.sha256(
-                (mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
-            time_ = time.strftime("%Y/%m/%d-%X")
-            json = {"mac": hash.hexdigest(), "origin": {"ID": id, "time": time_},
-                    "device": "Android"}
-            requests.put('http://' + url + ':' + port + '/macs', json=json)
-            return
-    except:
-        packetList.append(packet)
-        noEnviada += 1 
-    
+    if checkmac(mac):
+        send_mac(mac, "fixed")
+    else:
+        macAsociated = asociate_mac(packet)
+        if macAsociated is not None:
+            send_mac(macAsociated, "asociated")
+        else:
+            send_mac(mac, "random")
+
 
 def checkmac(mac):
     if not os.path.isfile("vendorDB"):
@@ -105,19 +50,22 @@ def checkmac(mac):
             print("Couldn't download vendor DB, next step will fail...")
     return mac[:8].upper() in open('vendorDB').read()
 
-
-def asociate_secuence(packet):
-    for packetStored in packetList:
-
+def asociate_mac(packet):
+    for mac in macList:
         timePacket = datetime_to_seconds(packet)
-        timePacketStored = datetime_to_seconds(packetStored)
+        timePacketStored = datetime_to_seconds(mac.time)
         diff = timePacket - timePacketStored
-
-        if int(packet.wlan.seq) <= int(packetStored.wlan.seq) + INTERVAL and int(packet.wlan.seq) >= int(packetStored.wlan.seq):
+        seqRecv = packet.wlan
+        if int(seqRecv) <= int(mac.seq) + INTERVAL and int(seqRecv) >= int(mac.seq):
             if diff < 175  and diff >= 0: 
-                packetList.remove(packetStored)
-                packetList.append(packet)
-                return packetStored.wlan.sa
+                macList.remove(mac)
+                macJSON = { 
+                    "mac": mac.mac,
+                    "seq": packet.wlan.seq,
+                    "time": datetime_to_string(packet)
+                }
+                macList.append(macJSON)
+                return mac.mac
     return None
 
 def datetime_to_seconds(packet):
@@ -125,6 +73,28 @@ def datetime_to_seconds(packet):
     d = datetime.strptime(timestring, "%d/%m/%Y %H:%M:%S")
     return time.mktime(d.timetuple())
 
+def datetime_to_string(packet):
+    timestring = packet.sniff_time.strftime("%d/%m/%Y %H:%M:%S")
+    return timestring
+
+def stringtime_to_seconds(timestring):
+    d = datetime.strptime(timestring, "%d/%m/%Y %H:%M:%S")
+    return time.mktime(d.timetuple())
+
+def send_mac(mac, type):
+    hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
+    time_ = time.strftime("%Y/%m/%d-%X")
+    json = {"mac": hash.hexdigest(), "origin": {"ID": id, "time": time_},
+            "device": "Android", "type": type}
+    requests.put('http://' + url + ':' + port + '/macs', json=json)
+
+def clean_list():
+    for mac in macList:
+        timeMac = stringtime_to_seconds(mac.time)
+        now = time.strftime("%d/%m/%Y %H:%M:%S")
+        if(diff > 170):
+            macList.remove(mac)
+            
 try:
     if mode == 'live':
         interface = config.get('live', 'Interface')
@@ -136,15 +106,11 @@ try:
     elif mode == 'file':
         file = config.get('file', 'File Name')
         print('Using file', file)
-        capture = pyshark.FileCapture(input_file='Captura_Peritos.pcapng', display_filter='wlan.fc.type_subtype==4')
+        capture = pyshark.FileCapture(
+            input_file='Captura_Peritos.pcapng', display_filter='wlan.fc.type_subtype==4')
         for packet in capture:
             getmac(packet)
-    
-    print("ALMACENADAS: ", almacenadas)
-    print("WPS: ", wps)
-    print("FABRICANTE: ", fabricante)
-    print("ASOCIADAS: ", asociada)
-    print("NO ENVIADAS: ", noEnviada)
+            clean_list()
 
 except KeyboardInterrupt:
     print('Shutting down...')

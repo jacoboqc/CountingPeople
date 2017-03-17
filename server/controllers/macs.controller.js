@@ -36,14 +36,15 @@ macs.addMacs = function (req, res) {
             ID: req.body.origin.ID,
             time: _dateStringDate(req.body.origin.time)
         }],
-        device: req.body.device
+        device: req.body.device,
+        type: req.body.type
     };
 
     try {
         if (Object.prototype.toString.call(_dateStringDate(req.body.origin.time)) !== '[object Date]') {
             res.status(400).send('Invalid date');
             logger.log('error', 'Invalid date');
-        } else if (typeof sample.mac !== 'string' || !sample.mac.match(macRegex)) {
+        } else if (typeof sample.mac !== 'string' || !sample.mac.match(macRegex) || typeof sample.type !== 'string') {
             res.status(400).send('Invalid MAC');
             logger.log('error', 'Invalid MAC');
         } else {
@@ -203,6 +204,7 @@ function __parseDBResponseToJSON(data) {
                 time: __dateStringFormat(data[i].origin[j].time)
             });
         }
+        temp.type = data[i].type;
         dataView.push(temp);
     }
     return dataView;

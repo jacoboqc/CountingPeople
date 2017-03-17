@@ -8,7 +8,7 @@ var macs = new Schema({
         time: Date
     }], 
     device: String,
-    random: Boolean
+    type: String
 });
 
 module.exports = mongoose.model('macs', macs);
