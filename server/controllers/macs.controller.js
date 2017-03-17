@@ -256,7 +256,6 @@ function __findMAC(sample, req, res) {
             } else {
                 res.status(200).json(data);
             }
-            res.status(200).send('All data saved correctly');
         }
     });
 }
@@ -293,7 +292,6 @@ function __toCSV(data) {
             device: mac.device,
         };
         mac.origin.forEach(function (origin) {
-            console.log(origin);
             macTemp.ID = origin.ID;
             macTemp.time = origin.time;
             dataCSV.push(macTemp);
