@@ -5,6 +5,7 @@ var logger = require('../logger.js');
 var macs = {};
 var fieldsIngored = '-__v -_id -origin._id';
 var macRegex = '[A-Fa-f0-9]{64}';
+var fields = ['mac','device','ID','time'];
 
 macs.getAll = function (req, res) {
     MacModel.find({}, fieldsIngored, function (err, data) {
@@ -16,7 +17,7 @@ macs.getAll = function (req, res) {
             if (req.header('Accept') === 'text/csv') {
                 try {
                     var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV });
+                    var CSV = json2csv({ data: to_CSV, fields: fields });
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
@@ -151,7 +152,7 @@ function _dateStringToJSON(dateString) {
 
     if (date.length !== 3 && hour.length !== 3) return null;
 
-    return {
+    a= {
         year: date[0],
         month: date[1],
         day: date[2],
@@ -159,6 +160,8 @@ function _dateStringToJSON(dateString) {
         minutes: hour[1],
         seconds: hour[2]
     };
+	logger.log('debug', 'here are the dates: ' + JSON.stringify(a));
+    return a;
 }
 
 function _dateStringDate(dateString) {
@@ -232,6 +235,7 @@ function __updateMac(newData, oldData) {
     });
 }
 
+
 function __findMAC(sample, req, res) {
     MacModel.find({ 'mac': sample.mac }, fieldsIngored, function (err, data) {
         if (data.length === 0) {
@@ -247,7 +251,7 @@ function __findMAC(sample, req, res) {
             if (req.header('Accept') === 'text/csv') {
                 try {
                     var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV });
+                    var CSV = json2csv({ data: to_CSV , fields: fields});
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
@@ -272,7 +276,7 @@ function __findDB(query, ignore, req, res) {
             if (req.header('Accept') === 'text/csv') {
                 try {
                     var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV });
+                    var CSV = json2csv({ data: to_CSV , fields: fields});
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
