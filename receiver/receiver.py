@@ -24,7 +24,7 @@ id = config.getint('general', 'Receiver ID')
 url = config.get('general', 'API URL')
 port = config.get('general', 'API Port')
 mode = config.get('general', 'Mode')
-macList = [] # macJSON = { "mac": "mac", "seq": "seq", "time", "time"}
+macList = []  # macJSON = { "mac": "mac", "seq": "seq", "time", "time"}
 INTERVAL = 5
 
 
@@ -50,6 +50,7 @@ def checkmac(mac):
             print("Couldn't download vendor DB, next step will fail...")
     return mac[:8].upper() in open('vendorDB').read()
 
+
 def asociate_mac(packet):
     for mac in macList:
         timePacket = datetime_to_seconds(packet)
@@ -57,9 +58,9 @@ def asociate_mac(packet):
         diff = timePacket - timePacketStored
         seqRecv = packet.wlan
         if int(seqRecv) <= int(mac.seq) + INTERVAL and int(seqRecv) >= int(mac.seq):
-            if diff < 175  and diff >= 0: 
+            if diff < 175:
                 macList.remove(mac)
-                macJSON = { 
+                macJSON = {
                     "mac": mac.mac,
                     "seq": packet.wlan.seq,
                     "time": datetime_to_string(packet)
@@ -68,18 +69,22 @@ def asociate_mac(packet):
                 return mac.mac
     return None
 
+
 def datetime_to_seconds(packet):
     timestring = packet.sniff_time.strftime("%d/%m/%Y %H:%M:%S")
     d = datetime.strptime(timestring, "%d/%m/%Y %H:%M:%S")
     return time.mktime(d.timetuple())
 
+
 def datetime_to_string(packet):
     timestring = packet.sniff_time.strftime("%d/%m/%Y %H:%M:%S")
     return timestring
 
+
 def stringtime_to_seconds(timestring):
     d = datetime.strptime(timestring, "%d/%m/%Y %H:%M:%S")
     return time.mktime(d.timetuple())
+
 
 def send_mac(mac, type):
     hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
@@ -88,13 +93,15 @@ def send_mac(mac, type):
             "device": "Android", "type": type}
     requests.put('http://' + url + ':' + port + '/macs', json=json)
 
+
 def clean_list():
     for mac in macList:
         timeMac = stringtime_to_seconds(mac.time)
         now = time.strftime("%d/%m/%Y %H:%M:%S")
         if(diff > 170):
             macList.remove(mac)
-            
+
+
 try:
     if mode == 'live':
         interface = config.get('live', 'Interface')
