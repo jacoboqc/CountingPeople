@@ -41,7 +41,7 @@ macs.addMacs = function (req, res) {
     };
 
     try {
-        if (req.body.origin.time.match(dateRegex)) {
+        if (!req.body.origin.time.match(dateRegex)) {
             res.status(400).send('Invalid date');
             logger.log('error', 'Invalid date');
         } else if (!sample.mac.match(macRegex)) {
