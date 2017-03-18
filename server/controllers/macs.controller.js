@@ -5,7 +5,7 @@ var logger = require('../logger.js');
 var macs = {};
 var fieldsIngored = '-__v -_id -origin._id';
 var macRegex = '[A-Fa-f0-9]{64}';
-var dateRegex = /^(\d{4})\/(\d{2})\/(\d{2})-(\d{2})\:(\d{2})\:(\d{2})/g;
+var dateRegex = /^(\d{4})\/(\d{2}|\d{1})\/(\d{2}|\d{1})-(\d{2}|\d{1})\:(\d{2}|\d{1})\:(\d{2}|\d{1})/g;
 var fields = ['mac', 'device', 'ID', 'time'];
 
 macs.getAll = function (req, res) {
