@@ -5,7 +5,7 @@ var logger = require('../logger.js');
 var macs = {};
 var fieldsIngored = '-__v -_id -origin._id';
 var macRegex = '[A-Fa-f0-9]{64}';
-var fields = ['mac','device','ID','time'];
+var fields = ['mac', 'device', 'ID', 'time'];
 
 macs.getAll = function (req, res) {
     MacModel.find({}, fieldsIngored, function (err, data) {
@@ -16,8 +16,7 @@ macs.getAll = function (req, res) {
             data = __parseDBResponseToJSON(data);
             if (req.header('Accept') === 'text/csv') {
                 try {
-                    var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV, fields: fields });
+                    var CSV = __CSVResponse(data);
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
@@ -83,13 +82,11 @@ macs.findMac = function (req, res) {
 
 macs.findBeforeEnd = function (end, req, res) {
     end = _dateStringToJSON(end);
-
     if (end === null) {
         logger.log('error', 'End empty');
         res.status(400).send('End empty');
     } else {
         var endDate = new Date(end.year, end.month, end.day, end.hour, end.minutes, end.seconds);
-
         if (Object.prototype.toString.call(endDate) !== '[object Date]') {
             logger.log('error', 'Invalid Date');
             res.status(400).send('Invalid Date');
@@ -107,7 +104,6 @@ macs.findAfterStart = function (start, req, res) {
         res.status(400).send('Start empty');
     } else {
         var startDate = new Date(start.year, start.month, start.day, start.hour, start.minutes, start.seconds);
-
         if (Object.prototype.toString.call(startDate) !== '[object Date]') {
             logger.log('error', 'Invalid Date');
             res.status(400).send('Invalid Date');
@@ -152,7 +148,7 @@ function _dateStringToJSON(dateString) {
 
     if (date.length !== 3 && hour.length !== 3) return null;
 
-    a= {
+    a = {
         year: date[0],
         month: date[1],
         day: date[2],
@@ -160,7 +156,7 @@ function _dateStringToJSON(dateString) {
         minutes: hour[1],
         seconds: hour[2]
     };
-	logger.log('debug', 'here are the dates: ' + JSON.stringify(a));
+    logger.log('debug', 'here are the dates: ' + JSON.stringify(a));
     return a;
 }
 
@@ -250,8 +246,7 @@ function __findMAC(sample, req, res) {
         } else {
             if (req.header('Accept') === 'text/csv') {
                 try {
-                    var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV , fields: fields});
+                    var CSV = __CSVResponse(data);
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
@@ -260,7 +255,6 @@ function __findMAC(sample, req, res) {
             } else {
                 res.status(200).json(data);
             }
-            res.status(200).send('All data saved correctly');
         }
     });
 }
@@ -275,8 +269,7 @@ function __findDB(query, ignore, req, res) {
 
             if (req.header('Accept') === 'text/csv') {
                 try {
-                    var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV , fields: fields});
+                    var CSV = __CSVResponse(data);
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
@@ -297,7 +290,6 @@ function __toCSV(data) {
             device: mac.device,
         };
         mac.origin.forEach(function (origin) {
-            console.log(origin);
             macTemp.ID = origin.ID;
             macTemp.time = origin.time;
             dataCSV.push(macTemp);
@@ -305,6 +297,11 @@ function __toCSV(data) {
     }, this);
 
     return dataCSV;
+}
+
+function __CSVResponse(data) {
+    var to_CSV = __toCSV(data);
+    return json2csv({ data: to_CSV, fields: fields });
 }
 
 module.exports = macs;
