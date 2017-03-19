@@ -5,6 +5,8 @@ var logger = require('../logger.js');
 var macs = {};
 var fieldsIngored = '-__v -_id -origin._id';
 var macRegex = '[A-Fa-f0-9]{64}';
+var dateRegex = /^(\d{4})\/(\d{2}|\d{1})\/(\d{2}|\d{1})-(\d{2}|\d{1})\:(\d{2}|\d{1})\:(\d{2}|\d{1})/g;
+var fields = ['mac', 'device', 'ID', 'time'];
 
 macs.getAll = function (req, res) {
     MacModel.find({}, fieldsIngored, function (err, data) {
@@ -15,8 +17,7 @@ macs.getAll = function (req, res) {
             data = __parseDBResponseToJSON(data);
             if (req.header('Accept') === 'text/csv') {
                 try {
-                    var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV });
+                    var CSV = __CSVResponse(data);
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
@@ -34,16 +35,16 @@ macs.addMacs = function (req, res) {
         mac: req.body.mac,
         origin: [{
             ID: req.body.origin.ID,
-            time: _dateStringDate(req.body.origin.time)
+            time: new Date(req.body.origin.time)
         }],
         device: req.body.device
     };
 
     try {
-        if (Object.prototype.toString.call(_dateStringDate(req.body.origin.time)) !== '[object Date]') {
+        if (!req.body.origin.time.match(dateRegex)) {
             res.status(400).send('Invalid date');
             logger.log('error', 'Invalid date');
-        } else if (typeof sample.mac !== 'string' || !sample.mac.match(macRegex)) {
+        } else if (!sample.mac.match(macRegex)) {
             res.status(400).send('Invalid MAC');
             logger.log('error', 'Invalid MAC');
         } else {
@@ -68,7 +69,7 @@ macs.findByDevice = function (req, res) {
 macs.findMac = function (req, res) {
     var mac = req.params.mac;
     try {
-        if (typeof mac === 'string' && mac.match(macRegex)) {
+        if (mac.match(macRegex)) {
             __findDB({ 'mac': mac }, ' -mac', req, res);
         } else {
             res.status(400).send('Invalid MAC');
@@ -81,104 +82,35 @@ macs.findMac = function (req, res) {
 };
 
 macs.findBeforeEnd = function (end, req, res) {
-    end = _dateStringToJSON(end);
-
-    if (end === null) {
-        logger.log('error', 'End empty');
-        res.status(400).send('End empty');
+    if (!end.match(dateRegex)) {
+        logger.log('error', 'End empty or cannot parse');
+        res.status(400).send('End empty or cannot parse');
     } else {
-        var endDate = new Date(end.year, end.month, end.day, end.hour, end.minutes, end.seconds);
-
-        if (Object.prototype.toString.call(endDate) !== '[object Date]') {
-            logger.log('error', 'Invalid Date');
-            res.status(400).send('Invalid Date');
-        } else {
-            __findDB({ 'origin.time': { $lte: endDate } }, '', req, res);
-        }
+        var endDate = new Date(end);
+        __findDB({ 'origin.time': { $lte: endDate } }, '', req, res);
     }
 };
 
 macs.findAfterStart = function (start, req, res) {
-    start = _dateStringToJSON(start);
-
-    if (start === null) {
-        logger.log('error', 'Start empty');
-        res.status(400).send('Start empty');
+    if (!start.match(dateRegex)) {
+        logger.log('error', 'Start empty or cannot parse');
+        res.status(400).send('Start empty or cannot parse');
     } else {
-        var startDate = new Date(start.year, start.month, start.day, start.hour, start.minutes, start.seconds);
-
-        if (Object.prototype.toString.call(startDate) !== '[object Date]') {
-            logger.log('error', 'Invalid Date');
-            res.status(400).send('Invalid Date');
-        } else {
-            __findDB({ 'origin.time': { $gte: startDate } }, '', req, res);
-        }
+        var startDate = new Date(start);
+        __findDB({ 'origin.time': { $gte: startDate } }, '', req, res);
     }
 };
 
 macs.findByInterval = function (start, end, req, res) {
-    start = _dateStringToJSON(start);
-    end = _dateStringToJSON(end);
-    if (start === null || end === null) {
+    if (!start.match(dateRegex)|| !end.match(dateRegex)) {
         logger.log('error', 'Start/End empty or cannot parse');
         res.status(400).send('Start/End empty or cannot parse');
     } else {
-
-        var startDate = new Date(start.year, start.month, start.day, start.hour, start.minutes, start.seconds);
-        var endDate = new Date(end.year, end.month, end.day, end.hour, end.minutes, end.seconds);
-
-        if (Object.prototype.toString.call(startDate) !== '[object Date]' || Object.prototype.toString.call(endDate) !== '[object Date]') {
-            logger.log('error', 'Invalid Date');
-            res.status(400).send('Invalid Date');
-        } else {
-            __findDB({ 'origin.time': { $gte: startDate, $lte: endDate } }, '', req, res);
-        }
+        var startDate = new Date(start);
+        var endDate = new Date(end);
+        __findDB({ 'origin.time': { $gte: startDate, $lte: endDate } }, '', req, res);
     }
 };
-
-function _dateStringToJSON(dateString) {
-    var dateSplit, date, hour;
-
-    try {
-        dateSplit = JSON.parse(dateString).time.split('-');
-        date = dateSplit[0].split('/');
-        hour = dateSplit[1].split(':');
-
-    } catch (err) {
-        logger.log('error', err);
-        return null;
-    }
-
-    if (date.length !== 3 && hour.length !== 3) return null;
-
-    return {
-        year: date[0],
-        month: date[1],
-        day: date[2],
-        hour: hour[0],
-        minutes: hour[1],
-        seconds: hour[2]
-    };
-}
-
-function _dateStringDate(dateString) {
-    var dateSplit, date, hour;
-    try {
-        dateSplit = dateString.split('-');
-        if (dateSplit.length !== 2) return null;
-
-        date = dateSplit[0].split('/');
-        hour = dateSplit[1].split(':');
-    } catch (err) {
-        logger.log('error', err);
-        return null;
-    }
-
-    if (date.length !== 3 && hour.length !== 3) return null;
-
-    return new Date(date[0], date[1], date[2], hour[0], hour[1], hour[2]);
-}
-
 
 function __dateStringFormat(dateISO) {
     var dateSplit, date, hour;
@@ -246,8 +178,7 @@ function __findMAC(sample, req, res) {
         } else {
             if (req.header('Accept') === 'text/csv') {
                 try {
-                    var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV });
+                    var CSV = __CSVResponse(data);
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
@@ -256,7 +187,6 @@ function __findMAC(sample, req, res) {
             } else {
                 res.status(200).json(data);
             }
-            res.status(200).send('All data saved correctly');
         }
     });
 }
@@ -271,8 +201,7 @@ function __findDB(query, ignore, req, res) {
 
             if (req.header('Accept') === 'text/csv') {
                 try {
-                    var to_CSV = __toCSV(data);
-                    var CSV = json2csv({ data: to_CSV });
+                    var CSV = __CSVResponse(data);
                     res.status(200).send(CSV);
                 } catch (err) {
                     res.status(500).send('Cannot send CSV');
@@ -293,7 +222,6 @@ function __toCSV(data) {
             device: mac.device,
         };
         mac.origin.forEach(function (origin) {
-            console.log(origin);
             macTemp.ID = origin.ID;
             macTemp.time = origin.time;
             dataCSV.push(macTemp);
@@ -301,6 +229,11 @@ function __toCSV(data) {
     }, this);
 
     return dataCSV;
+}
+
+function __CSVResponse(data) {
+    var to_CSV = __toCSV(data);
+    return json2csv({ data: to_CSV, fields: fields });
 }
 
 module.exports = macs;
