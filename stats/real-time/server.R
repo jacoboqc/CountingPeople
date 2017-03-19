@@ -9,34 +9,35 @@ library(shiny)
 library(dplyr)
 library(tidyr)
 library(httr)
+library(ggplot2)
 
-addEnteringStatus <- function(data){
-  grouped <- data %>% group_by(MAC) %>%  mutate(
-    entering=as.logical(rank(timestamp) %% 2))
-  # Check if column "entering" changes each time a MAC appears
-  return(ungroup(grouped)$entering)
-}
+source("./server-functions.R")
 
-addAmountInside <- function(data){
-  # Amount of people in each timestamp: sum of "T" until then
-  accumulated <- data %>% mutate(
-    inside=cumsum(entering)-cumsum(!entering))
-  return(accumulated$inside)
-}
+refresh <- 10
+begin <- as.POSIXct("2017-03-19 02:04:42 CEST")
+end <- begin + refresh
+# mac_df <<- data.frame(row.names = c("MAC","Device", "ID", "timestamp"))
+mac_df <- data.frame(row.names = c("MAC","Device", "ID", "timestamp"))
+sec2milis <- function(x){x*1000}
 
-HTTPresponse2DataFrame <- function(url){
-  r <- GET(url)  
-  data <- read.csv(text=textConnection(content(r, "text")), header=T)
-}
+shinyServer(function(input, output, session) {
 
-shinyServer(function(input, output) {
-
-  output$time_evol <- renderPlot({
-    data <- read.csv("../data.csv")
-    data$entering <- addEnteringStatus(data)
-    data$inside <- addAmountInside(data)
-    smoothScatter(data$timestamp, data$inside, 
-                  xlab = "Timestamp", ylab="Amount of devices", main="Devices inside the system")
+  output$time_evol <- renderPrint({
+    invalidateLater(sec2milis(refresh), session)
+    begin <<- begin + refresh
+    end <<- end + refresh
+    print(begin)
+    print(end)
+  })
+  
+  output$mac_plot <- renderPlot({
+    invalidateLater(sec2milis(refresh), session)
+    mac_list <- getAllMacsByTimestamp(begin=begin, end=end)
+    mac_df <<- rbind(mac_df, mac_list)
+    names(mac_df) <- c("MAC","Device", "ID", "timestamp")
+    mac_df$entering <- addEnteringStatus(mac_df)
+    mac_df$inside <- addAmountInside(mac_df)
+    ggplot(mac_df, aes(timestamp,inside)) + geom_line()
   })
 
 })
