@@ -10,7 +10,16 @@ library(shiny)
 shinyUI(fluidPage(
 
   # Application title
-  titlePanel("Old Faithful Geyser Data"),
-  textOutput("time_evol"),
-  plotOutput("mac_plot")
+  titlePanel("Macs evolution"),
+  fluidRow(
+  textOutput("time_evol")
+  ),
+  fluidRow(
+    column(width=6,  titlePanel("Devices in the interval")),
+    column(width=6,  titlePanel("Devices since beginning"))
+  ),
+  fluidRow(
+    column(width=6,  plotOutput("devices_seen_interval")),
+    column(width=6,  plotOutput("devices_seen_total"))
+  )
 ))
