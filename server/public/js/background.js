@@ -109,11 +109,14 @@ function graphics() {
 function updateData() {
     var date = new Date();
     var x = date.getTime(); // current time
-    var dateRequestStart = date.getFullYear + '/' + date.getMonth + '/' + date.getDay + '-' + date.getHours + ':' + date.getMinutes + ':' + (date.getSeconds - timeRequest);
-    var dateRequestEnd = date.getFullYear + '/' + date.getMonth + '/' + date.getDay + '-' + date.getHours + ':' + date.getMinutes + ':' + date.getSeconds;
+    var sec = (date.getSeconds() - (timeRequest/1000));
+    if(sec < 0){
+        sec = 0;
+    }
+    var dateRequestStart = date.getFullYear() + '/' + (date.getMonth()+1) + '/' + date.getDate() + '-' + date.getHours() + ':' + date.getMinutes() + ':' + sec;
+    var dateRequestEnd = date.getFullYear() + '/' + (date.getMonth()+1) + '/' + date.getDate() + '-' + date.getHours() + ':' + date.getMinutes() + ':' + sec;
 
-
-    jQuery.get('http://localhost:3000/macs/interval?start={"time":"' + dateRequestStart + '"}&end={"time":"' + dateRequestEnd + '"}', function (response) {
+    jQuery.get('http://localhost:3000/macs/interval?start=' + dateRequestStart + '&end=' + dateRequestEnd, function (response) {
         //console.warn(response);
         //jQuery.get('http://localhost:3000/macs/interval?start={"time":"1993/01/01-22:10:30"}&end={"time":"2000/01/01-22:10:30"}', function (response) {
         series[2].addPoint([x, response.length], true, false);

@@ -28,6 +28,9 @@ Run the command 'node app.js' in the root directory of the module.
 
 ## API
 
+By default API sends response in JSON, but if the header Accept=text/csv, the response will be in CSV.
+
+
 - /macs
     - GET
 
@@ -162,7 +165,7 @@ Run the command 'node app.js' in the root directory of the module.
         Request form example:
 
         `
-        http://localhost:3000/macs/interval?start={"time":"1993/01/01-22:10:30"}       `
+        http://localhost:3000/macs/interval?start=1993/01/01-22:10:30       `
 
         Response body form example:
 
@@ -196,7 +199,7 @@ Run the command 'node app.js' in the root directory of the module.
         Request form example:
 
         `
-        http://localhost:3000/macs/interval?end={"time":"1995/01/01-22:10:30"}        `
+        http://localhost:3000/macs/interval?end=1995/01/01-22:10:30        `
 
         Response body form example:
 
@@ -230,7 +233,7 @@ Run the command 'node app.js' in the root directory of the module.
         Request form example:
 
         `
-        http://localhost:3000/macs/interval?start={"time":"1993/01/01-22:10:30"}&end={"time":"1995/01/01-22:10:30"}        `
+        http://localhost:3000/macs/interval?start=1993/01/01-22:10:30&end=1995/01/01-22:10:30        `
 
         Response body form example:
 
@@ -254,5 +257,3 @@ Run the command 'node app.js' in the root directory of the module.
             ]
         }]
         ```
-
-

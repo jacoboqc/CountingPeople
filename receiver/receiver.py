@@ -71,7 +71,7 @@ def asociate_mac(packet):
 
 
 def datetime_to_seconds(packet):
-    timestring = packet.sniff_time.strftime("%d/%m/%Y %H:%M:%S")
+    timestring = packet.strftime("%d/%m/%Y %H:%M:%S")
     d = datetime.strptime(timestring, "%d/%m/%Y %H:%M:%S")
     return time.mktime(d.timetuple())
 
@@ -88,7 +88,7 @@ def stringtime_to_seconds(timestring):
 
 def send_mac(mac, type):
     hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
-    time_ = time.strftime("%Y/%m/%d-%X")
+    time_ = packet.sniff_time.strftime("%Y/%m/%d-%X")
     json = {"mac": hash.hexdigest(), "origin": {"ID": id, "time": time_},
             "device": "Android", "type": type}
     requests.put('http://' + url + ':' + port + '/macs', json=json)
