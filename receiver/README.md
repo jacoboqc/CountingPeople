@@ -8,7 +8,7 @@
 
 ## Installation
 
-Check the [Installation](Installation.md) file.
+Check the [Installation](installation.md) file.
 
 ## Usage
 
