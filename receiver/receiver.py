@@ -24,8 +24,8 @@ id = config.getint('general', 'Receiver ID')
 url = config.get('general', 'API URL')
 port = config.get('general', 'API Port')
 mode = config.get('general', 'Mode')
+interval = int(config.get('general', 'Interval'))
 macList = []  # macJSON = { "mac": "mac", "seq": "seq", "time", "time"}
-INTERVAL = 5
 
 
 def getmac(packet):
@@ -60,7 +60,7 @@ def asociate_mac(packet):
         timePacketStored = stringtime_to_seconds(mac["time"])
         diff = (timePacket - timePacketStored).total_seconds()
         seqRecv = packet.wlan.seq
-        if int(seqRecv) <= int(mac["seq"]) + INTERVAL and int(seqRecv) >= int(mac["seq"]):
+        if int(seqRecv) <= int(mac["seq"]) + interval and int(seqRecv) >= int(mac["seq"]):
             if diff < 175:
                 macList.remove(mac)
                 macJSON = {
