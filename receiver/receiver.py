@@ -32,13 +32,15 @@ def getmac(packet):
     mac = packet.wlan.sa
 
     if checkmac(mac):
-        send_mac(mac, "fixed")
+        send_mac(packet, mac, "fixed")
     else:
         macAsociated = asociate_mac(packet)
         if macAsociated is not None:
-            send_mac(macAsociated, "asociated")
+            send_mac(packet, macAsociated, "asociated")
         else:
-            send_mac(mac, "random")
+            global macList
+            add_to_list(packet)
+            send_mac(packet, mac, "random")
 
 
 def checkmac(mac):
@@ -52,53 +54,64 @@ def checkmac(mac):
 
 
 def asociate_mac(packet):
+    global macList
     for mac in macList:
         timePacket = datetime_to_seconds(packet)
-        timePacketStored = datetime_to_seconds(mac.time)
-        diff = timePacket - timePacketStored
-        seqRecv = packet.wlan
-        if int(seqRecv) <= int(mac.seq) + INTERVAL and int(seqRecv) >= int(mac.seq):
+        timePacketStored = stringtime_to_seconds(mac["time"])
+        diff = (timePacket - timePacketStored).total_seconds()
+        seqRecv = packet.wlan.seq
+        if int(seqRecv) <= int(mac["seq"]) + INTERVAL and int(seqRecv) >= int(mac["seq"]):
             if diff < 175:
                 macList.remove(mac)
                 macJSON = {
-                    "mac": mac.mac,
+                    "mac": mac["mac"],
                     "seq": packet.wlan.seq,
                     "time": datetime_to_string(packet)
                 }
                 macList.append(macJSON)
-                return mac.mac
+                return mac["mac"]
     return None
 
 
 def datetime_to_seconds(packet):
-    timestring = packet.strftime("%d/%m/%Y %H:%M:%S")
-    d = datetime.strptime(timestring, "%d/%m/%Y %H:%M:%S")
-    return time.mktime(d.timetuple())
+    timestring = packet.sniff_time.strftime("%Y/%m/%d-%H:%M:%S")
+    return datetime.strptime(timestring, "%Y/%m/%d-%H:%M:%S")
 
 
 def datetime_to_string(packet):
-    timestring = packet.sniff_time.strftime("%d/%m/%Y %H:%M:%S")
+    timestring = packet.sniff_time.strftime("%Y/%m/%d-%H:%M:%S")
     return timestring
 
 
 def stringtime_to_seconds(timestring):
-    d = datetime.strptime(timestring, "%d/%m/%Y %H:%M:%S")
-    return time.mktime(d.timetuple())
+    return datetime.strptime(timestring, "%Y/%m/%d-%H:%M:%S")
 
 
-def send_mac(mac, type):
+def send_mac(packet, mac, type):
     hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
-    time_ = packet.sniff_time.strftime("%Y/%m/%d-%X")
+    time_ = packet.sniff_time.strftime("%Y/%m/%d-%H:%M:%S")
     json = {"mac": hash.hexdigest(), "origin": {"ID": id, "time": time_},
             "device": "Android", "type": type}
     requests.put('http://' + url + ':' + port + '/macs', json=json)
 
 
+def add_to_list(packet):
+    macJSON = {
+        "mac": packet.wlan.sa,
+        "seq": packet.wlan.seq,
+        "time": packet.sniff_time.strftime("%Y/%m/%d-%H:%M:%S")
+    }
+    global macList
+    macList.append(macJSON)
+
+
 def clean_list():
-    for mac in macList:
-        timeMac = stringtime_to_seconds(mac.time)
-        now = time.strftime("%d/%m/%Y %H:%M:%S")
-        if(diff > 170):
+    global macList
+    for index, mac in enumerate(macList):
+        timeMac = stringtime_to_seconds(mac["time"])
+        now = stringtime_to_seconds(time.strftime("%Y/%m/%d-%H:%M:%S"))
+        diff = (now - timeMac).total_seconds()
+        if diff > 170:
             macList.remove(mac)
 
 
@@ -110,6 +123,8 @@ try:
             interface=interface, display_filter='wlan.fc.type_subtype==4')
         for packet in capture.sniff_continuously():
             getmac(packet)
+            clean_list()
+
     elif mode == 'file':
         file = config.get('file', 'File Name')
         print('Using file', file)
@@ -117,7 +132,6 @@ try:
             input_file='Captura_Peritos.pcapng', display_filter='wlan.fc.type_subtype==4')
         for packet in capture:
             getmac(packet)
-            clean_list()
 
 except KeyboardInterrupt:
     print('Shutting down...')

@@ -40,7 +40,6 @@ macs.addMacs = function (req, res) {
         device: req.body.device,
         type: req.body.type
     };
-
     try {
         if (!req.body.origin.time.match(dateRegex)) {
             res.status(400).send('Invalid date');
@@ -158,7 +157,6 @@ function __updateMac(newData, oldData) {
     oldData[0].origin.forEach(function (item) {
         newData.origin.push(item);
     });
-
     MacModel.update({ 'mac': newData.mac }, newData, {}, function (err, num) {
         if (err) {
             return err;
@@ -224,9 +222,13 @@ function __toCSV(data) {
             device: mac.device,
         };
         mac.origin.forEach(function (origin) {
-            macTemp.ID = origin.ID;
-            macTemp.time = origin.time;
-            macTemp.type = mac.type;
+            var macTemp = {
+                mac: mac.mac,
+                device: mac.device,
+                ID:  origin.ID,
+                time: origin.time,
+                type: mac.type
+            };
             dataCSV.push(macTemp);
         }, this);
     }, this);
