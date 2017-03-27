@@ -20,7 +20,9 @@ The file 'config/config.js' constains the configuration of the server. The param
     - warn
     - debug
 - port: port where the server listen.
-- logFile: path to the file on the logs are saved.
+- logFile: Turn off/on the log by file.
+- logConsole: Turn off/on the log by console.
+- logFilePath: path to the file on the logs are saved.
 
 ## Deployment
 
