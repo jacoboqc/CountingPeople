@@ -2,20 +2,20 @@
 # coding: utf-8
 
 # # CountingPeople
-# 
-# ## Static statistics 
+#
+# ## Static statistics
 # ### Description
-# 
+#
 # The following code generates some statistics used to annalyse our system.
 
 # ### Requisites
-# 
+#
 #     - Python 3.6
 #     - Pandas
 #     - Matplotlib
 #     - numpy
 #     - Ipython
-# 
+#
 
 # In[8]:
 
@@ -26,6 +26,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from datetime import datetime
 from IPython.display import HTML
+from tabulate import tabulate
 
 HTML('''<script>
 code_show=true; 
@@ -44,7 +45,7 @@ To toggle on/off the raw code, click <a href="javascript:code_toggle()">here</a>
 
 
 # ### Functions
-# 
+#
 #     - read_csv: read the csv and parse it to dataFrame
 
 # In[9]:
@@ -73,123 +74,79 @@ def consult_api():
 # In[11]:
 
 def mac_occurs(df, show):
-    g = df.groupby(["mac", "time"], as_index=False)
-    d= g.size()
-    plt.axes().axes.set_xticklabels([])
-    plt.title('Occurs per mac')
-    plt.xlabel("MACs")
-    plt.ylabel("Occurs")
-    plt.tight_layout()
-    ax = d.plot(x='mac', y=d, kind='bar')
-    ax.set_xticklabels([])
-    plt.savefig('mac_occurs.pdf', bbox_inches="tight")
-    
-    if show is True:
-        plt.show()
-    
-    plt.gcf().clear()
+    g = df.groupby(["mac"], as_index=False)
+    d = g.size()
+
+    plot(d, 'mac', None, 'Ocurrs per mac', 'MACs', 'Occurs', None,
+         None, None, None, show, None, 'bar', 'mac_occurs.pdf')
 
 
 #     - origin_activity: plot all the activity on the system.
 
 # In[12]:
 
+
 def origin_activity(df, show):
     g = df.groupby(pd.TimeGrouper(freq='45s')).size()
-    g.plot(x='time', y=g, kind='bar')
-    plt.title('Origin activity on the system')
-    plt.xlabel("Time")
-    plt.ylabel("Origin")
-    plt.tight_layout()
-    plt.savefig("origin_activity.pdf", bbox_inches="tight")
-    
-    if show is True:
-        plt.show()
-    
-    plt.gcf().clear()
 
+    plot(g, 'time', None, 'Origin activity on the system', 'Time', 'Origin',
+         None, None, None, None, show, None, 'bar', 'origin_activity.pdf')
 
-#     - mac_activity: plots the activity each mac along the time 
+#     - mac_activity: plots the activity each mac along the time
 
 # In[13]:
+
 
 """
 It should be wrong but gives the same result that mac_activity_good
 """
+
+
 def mac_activity_bad(df, show):
     df = df.drop(['type', 'ID', 'device'], axis=1)
-    g = df.groupby([
-        pd.TimeGrouper(freq='45s')], as_index=True)
+    g = df.groupby([pd.TimeGrouper(freq='45s')], as_index=True)
 
     df = pd.DataFrame(columns=['time', 'macs'])
     for name, group in g:
         df.loc[len(df)] = [name, len(group.groupby(['mac']))]
 
-    df.plot(x='time', y='macs', kind='bar',
-            title='Mac activity on the system', legend=False)
-    plt.title('Activity on the system')
-    plt.xlabel("Time")
-    plt.ylabel("Activity")
-    plt.tight_layout()
-    plt.savefig("mac_activity_bad.pdf", bbox_inches="tight")
-    
-    if show is True:
-        plt.show()
-    
-    plt.gcf().clear()
-
+    plot(df, 'time', 'macs', 'Activity on the system', 'Time', 'Activity',
+         None, None, None, None, show, None, 'bar', 'mac_activity_bad.pdf')
 
 # In[14]:
 
+
 def mac_activty_good(df, show):
-    csv_1 = df.drop(['type', 'ID', 'device'], axis=1)
-    csv_1 = csv_1.set_index(pd.DatetimeIndex(csv_1['time']))
-    group_by_mac_in_time = csv_1.groupby(['mac'], as_index=False).first()
-    group_by_mac_in_time = group_by_mac_in_time.set_index(
-        pd.DatetimeIndex(group_by_mac_in_time['time']))
-    group_by_mac_in_time = group_by_mac_in_time.groupby(
-        [pd.TimeGrouper(freq='45s')], as_index=False).size()
+    df = df.drop(['type', 'ID', 'device'], axis=1)
+    df = df.set_index(pd.DatetimeIndex(df['time']))
+    g = df.groupby(['mac'], as_index=False).first()
+    g = g.set_index(pd.DatetimeIndex(g['time']))
+    g = g.groupby([pd.TimeGrouper(freq='45s')], as_index=False).size()
 
-    plt.title('Activity on the system')
-    plt.xlabel("Time")
-    plt.ylabel("MAC")
-    group_by_mac_in_time.plot(kind='bar')
-    plt.savefig("mac_activity_good.pdf", bbox_inches="tight")
-    plt.tight_layout()
-    
-    if show is True:
-        plt.show()
-    
-    plt.gcf().clear()
-
+    plot(g, 'time', 'macs', 'Activity on the system', 'Time', 'Activity',
+         None, None, None, None, show, None, 'bar', 'mac_activity_good.pdf')
 
 #     - mac_system: Plot the acumulated number of macs in the system
 
 # In[15]:
 
+
 def mac_system(df, show):
-    csv_1 = df.drop(['type', 'ID', 'device'], axis=1)
-    csv_1 = csv_1.set_index(pd.DatetimeIndex(csv_1['time']))
-    group_by_mac_in_time = csv_1.groupby(['mac'], as_index=False).first()
-    group_by_mac_in_time = group_by_mac_in_time.set_index(
-        pd.DatetimeIndex(group_by_mac_in_time['time']))
-    group_by_mac_in_time = group_by_mac_in_time.groupby(
-        [pd.TimeGrouper(freq='45s')], as_index=False).size().cumsum()
+    df = df.drop(['type', 'ID', 'device'], axis=1)
+    df = df.set_index(pd.DatetimeIndex(df['time']))
+    g = df.groupby(['mac'], as_index=False).first()
+    g = g.set_index(pd.DatetimeIndex(g['time']))
+    g = g.groupby([pd.TimeGrouper(freq='45s')], as_index=False).size().cumsum()
 
-    plt.title('Mac on the system')
-    plt.xlabel("Time")
-    plt.ylabel("Nº Macs")
-    group_by_mac_in_time.plot()
-    plt.savefig("mac_system.pdf", bbox_inches="tight")
-    
-    if show is True:
-        plt.show()
-    plt.gcf().clear()
+    plot(g, None, None, 'Macs on the system', 'Time', 'Nº Macs',
+         None, None, None, None, show, None, None, 'mac_system.pdf')
 
 
-#     - T_burst: Plot the time between burst for each mac, and plot the average time between burst. 
+#     - T_burst: Plot the time between burst for each mac, and plot the
+# average time between burst.
 
 # In[16]:
+
 
 def T_burst(df, show):
     df = df.drop(['ID', 'device'], axis=1)
@@ -223,22 +180,15 @@ def T_burst(df, show):
                     t_average = t_average / i
                     df_t.loc[len(df_t)] = [index, t_average]
 
-    # macs with average equal to 0 are discarted => consecutive emits by the same device
+    # macs with average equal to 0 are discarted =>
+    # consecutive emits by the same device
     df_t = df_t[~df_t['average'].isin([0.0])]
-    
+
     # Plot burts time for each mac
-    ax = df_t.plot(x=df_t['mac'])
-    ax.set_xticklabels([])
-    plt.title('Time MAC burst')
-    plt.xlabel("Mac")
-    plt.ylabel("Burst")
-    plt.savefig("time_mac_burst.pdf", bbox_inches="tight")
-    
-    if show is True:
-        plt.show()
-    plt.gcf().clear()
-    
-    ###########       PLOT DISTRIBUTION  ########
+    plot(df_t, 'mac', None, 'Time MAC burst', 'Mac', 'Burst',
+         None, None, None, None, show, [], None, 'time_mac_burst.pdf')
+
+    #       PLOT DISTRIBUTION  ########
     fig, axes = plt.subplots(nrows=2, ncols=1)
     df_t.plot(y='average', kind='hist', rot=0, ax=axes[0], legend=False)
     df_t.plot(y='average', kind='kde', ax=axes[1], legend=False)
@@ -246,12 +196,12 @@ def T_burst(df, show):
     axes[1].set_xlim(xmin=0, xmax=500)
     plt.xlabel("Time")
     plt.savefig("time_burst.pdf", bbox_inches="tight")
-    
+
     if show is True:
         plt.show()
     plt.gcf().clear()
 
-    ###########        PLOT DISTRIBUTION grouped ########
+    #       PLOT DISTRIBUTION grouped ########
     # macs are agrupated in 10 groups
     bins = np.linspace(0, df_t.average.max(), 10)
     df_t['category'] = pd.cut(df_t['average'], bins)
@@ -264,35 +214,56 @@ def T_burst(df, show):
     axes[1].set_xlim(xmin=0)
     plt.xlabel("Time")
     plt.savefig("time_categorize_burst.pdf", bbox_inches="tight")
-    
+
     if show is True:
         plt.show()
     plt.gcf().clear()
 
 
+def plot(data, xVar, yVar, title, xlabel, ylabel, xlimMin, xlimMax,
+         ylimMin, ylimMax, shouldPlot, xtick, kind, pdfName):
+
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.tight_layout()
+    if kind is not None:
+        ax = data.plot(x=xVar, y=yVar, kind=kind, legend=False)
+    else:
+        ax = data.plot(x=xVar, y=yVar, legend=False)
+
+    if xtick is not None:
+        ax.set_xticklabels(xtick)
+    plt.savefig(pdfName, bbox_inches="tight")
+
+    if shouldPlot is True:
+        plt.show()
+
+    plt.gcf().clear()
 # ### Example
-# 
+#
 # Main program example with results
 
 # In[17]:
 
-#df = consult_api()
+
+# df = consult_api()
 df = read_csv('Captura_Peritos.csv')
 
 
 # In[18]:
 
-mac_activty_good(df, True)
+mac_activty_good(df, False)
 
 
 # In[19]:
 
-mac_activity_bad(df, True)
+mac_activity_bad(df, False)
 
 
 # In[20]:
 
-origin_activity(df, True)
+origin_activity(df, False)
 
 
 # In[21]:
@@ -302,9 +273,12 @@ mac_occurs(df, True)
 
 # In[22]:
 
-mac_system(df, True)
+mac_system(df, False)
 
 
 # In[23]:
 
-T_burst(df, True)
+T_burst(df, False)
+
+
+# T_stay(df, False)
