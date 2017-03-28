@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import pyshark
@@ -30,17 +30,17 @@ macList = []  # macJSON = { "mac": "mac", "seq": "seq", "time", "time"}
 
 def getmac(packet):
     mac = packet.wlan.sa
-
-    if checkmac(mac):
-        send_mac(packet, mac, "fixed")
+    vendor = checkmac(mac)
+    if vendor:
+        send_mac(packet, mac, "fixed", vendor)
     else:
         macAsociated = asociate_mac(packet)
         if macAsociated is not None:
-            send_mac(packet, macAsociated, "asociated")
+            send_mac(packet, macAsociated, "asociated", "Undefined")
         else:
             global macList
             add_to_list(packet)
-            send_mac(packet, mac, "random")
+            send_mac(packet, mac, "random", "Undefined")
 
 
 def checkmac(mac):
@@ -50,8 +50,13 @@ def checkmac(mac):
                 "https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf", "vendorDB")
         except Exception:
             print("Couldn't download vendor DB, next step will fail...")
-    return mac[:8].upper() in open('vendorDB').read()
-
+    with open('vendorDB') as f:
+        lines = f.read().splitlines()
+        for line in lines:
+                split = line.split()
+                if split and mac.upper().startswith(split[0]):
+                        return split[1]
+        return None
 
 def asociate_mac(packet):
     global macList
@@ -87,11 +92,11 @@ def stringtime_to_seconds(timestring):
     return datetime.strptime(timestring, "%Y/%m/%d-%H:%M:%S")
 
 
-def send_mac(packet, mac, type):
+def send_mac(packet, mac, type, vendor):
     hash = hashlib.sha256((mac + '_Dr0j4N0C0l4c40_').encode('utf-8'))
     time_ = packet.sniff_time.strftime("%Y/%m/%d-%H:%M:%S")
     json = {"mac": hash.hexdigest(), "origin": {"ID": id, "time": time_},
-            "device": "Android", "type": type}
+            "device": vendor, "type": type}
     requests.put('http://' + url + ':' + port + '/macs', json=json)
 
 
