@@ -134,7 +134,7 @@ try:
         file = config.get('file', 'File Name')
         print('Using file', file)
         capture = pyshark.FileCapture(
-            input_file='Captura_Peritos.pcapng', display_filter='wlan.fc.type_subtype==4')
+            input_file=file, display_filter='wlan.fc.type_subtype==4')
         for packet in capture:
             getmac(packet)
 
