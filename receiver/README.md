@@ -10,6 +10,8 @@
 
 Check the [Installation](installation.md) file.
 
+> After installation and setup, you can backup the content of the Pi's SD card for easy re-configuration, follow [this tutorial](http://raspberrypi.stackexchange.com/questions/311/how-do-i-backup-my-raspberry-pi).
+
 ## Usage
 
 Put your wireless interface in monitor mode:
