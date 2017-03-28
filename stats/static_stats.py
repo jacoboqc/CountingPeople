@@ -240,6 +240,35 @@ def plot(data, xVar, yVar, title, xlabel, ylabel, xlimMin, xlimMax,
         plt.show()
 
     plt.gcf().clear()
+
+
+def T_system(df, show):
+    df = df.drop(['ID', 'device'], axis=1)
+    df = df[~df['type'].isin(['random'])]
+    df = df.groupby(['mac'], as_index=False).filter(lambda x: len(x) > 1)
+    g = df.groupby(['mac'], as_index=False)
+    gIN = g.first()
+    gOUT = g.last()
+
+    dfInOut = pd.DataFrame(columns=['mac', 'T'])
+    diff = (gOUT['time'] - gIN['time']).to_frame()
+    gIN['time_system'] = (diff['time'] / np.timedelta64(1, 's'))
+    gIN = gIN[~gIN['time_system'].isin([0.0])]
+
+    #       PLOT DISTRIBUTION  ########
+    fig, axes = plt.subplots(nrows=2, ncols=1)
+    axes[0].set_xlim(xmin=0, xmax=2000)
+    axes[1].set_xlim(xmin=0, xmax=2000)
+    gIN.plot(y='time_system', x=gIN['mac'],
+             kind='hist', rot=0, ax=axes[0], legend=False)
+    gIN.plot(y='time_system', kind='kde', ax=axes[1], legend=False)
+    plt.savefig("time_in_system.pdf", bbox_inches="tight")
+
+    if show is True:
+        plt.show()
+    plt.gcf().clear()
+
+
 # ### Example
 #
 # Main program example with results
@@ -252,7 +281,7 @@ df = read_csv('Captura_Peritos.csv')
 
 
 # In[18]:
-
+"""
 mac_activty_good(df, False)
 
 
@@ -279,6 +308,6 @@ mac_system(df, False)
 # In[23]:
 
 T_burst(df, False)
+"""
 
-
-# T_stay(df, False)
+T_system(df, True)
