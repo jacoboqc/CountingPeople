@@ -217,10 +217,6 @@ function __findDB(query, ignore, req, res) {
 function __toCSV(data) {
     var dataCSV = [];
     data.forEach(function (mac) {
-        var macTemp = {
-            mac: mac.mac,
-            device: mac.device,
-        };
         mac.origin.forEach(function (origin) {
             var macTemp = {
                 mac: mac.mac,
