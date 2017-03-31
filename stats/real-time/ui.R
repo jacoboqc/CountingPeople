@@ -15,11 +15,20 @@ shinyUI(fluidPage(
   textOutput("time_evol")
   ),
   fluidRow(
-    column(width=6,  titlePanel("Devices in the interval")),
-    column(width=6,  titlePanel("Devices since beginning"))
+    column(width=6,  titlePanel("Macs per second (interval)")),
+    column(width=6,  titlePanel("Macs per second"))
   ),
   fluidRow(
-    column(width=6,  plotOutput("devices_seen_interval")),
-    column(width=6,  plotOutput("devices_seen_total"))
+    column(width=6,  plotOutput("macs_per_second")),
+    column(width=6,  plotOutput("macs_per_second_total"))
+  ),
+  fluidRow(
+    column(width=6,  titlePanel("Time per mac")),
+    column(width=6,  titlePanel("Time between burst"))
+    #column(width=6,  titlePanel("Observations per mac"))
+  ),
+  fluidRow(
+    column(width=6,  plotOutput("time_per_mac")),
+    column(width=6,  plotOutput("macs_per_second_total"))
   )
 ))
