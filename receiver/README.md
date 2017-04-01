@@ -14,6 +14,11 @@ Check the [Installation](installation.md) file.
 
 ## Usage
 
+It is advisable to check the system's time with `date`, and change it if necessary:
+```
+timedatectl set-time 'YYYY-MM-DD HH:MM:SS'
+```
+
 Put your wireless interface in monitor mode:
 ```
 sudo airmon-ng start wlan0
