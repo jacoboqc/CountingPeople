@@ -27,7 +27,7 @@ sudo airmon-ng start wlan0
 
 You will need a configuration file. There is an example in this folder.
 
-Be sure the server is online (package `server` of this project) and run `./receiver.py`
+Be sure the server is online (package `server` of this project) and run `./receiver.py start`
 
 ## Configuration file
 
