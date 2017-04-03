@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import sys
 import pyshark
 import requests
@@ -11,8 +10,12 @@ import hashlib
 import time
 from datetime import datetime
 
-if len(sys.argv) > 1 and sys.argv[1] == 'help':
-    print('Usage: receiver.py [help]')
+if len(sys.argv) == 1 or (len(sys.argv) > 1 and sys.argv[1] == 'help'):
+    print('Usage: receiver.py {start|full|help}')
+    print('\tOptions:')
+    print('\t\tstart:\tOnly start receiver')
+    print('\t\tfull:\tPerform initial tasks and start receiver')
+    print('\t\thelp:\tShow this help')
     print('Config file must be placed in the same directory and named `default.conf`.')
     sys.exit()
 
@@ -25,6 +28,12 @@ url = config.get('general', 'API URL')
 port = config.get('general', 'API Port')
 mode = config.get('general', 'Mode')
 interval = int(config.get('general', 'Interval'))
+
+if len(sys.argv) > 1 and sys.argv[1] == 'full':
+    print('Performing initial tasks:')
+    os.system('sudo airmon-ng start wlan0')
+    time.sleep(5)
+
 macList = []  # macJSON = { "mac": "mac", "seq": "seq", "time", "time"}
 
 
