@@ -76,22 +76,22 @@ shinyServer(function(input, output, session) {
     ggplot(macs_per_second, aes(timestamp,num_macs)) + geom_col() 
        # scale_x_datetime("timestamp", labels = date_format("%M:%S"))
   })
-  # 
-  # output$mac_observations <- renderPlot({
-  #   
-  # })
-  # 
+   
+   output$mac_observations <- renderPlot({
+     
+  })
+  
   # output$time_per_mac <- renderPlot({
-  #   ## straw
-  #   getMinOrMax <- function(mac, data, min_or_max, mac_col, time_col){
-  #     min_or_max(data[data[mac_col]==mac, time_col])
+  #  ## straw
+  #  getMinOrMax <- function(mac, data, min_or_max, mac_col, time_col){
+  #    min_or_max(data[data[mac_col]==mac, time_col])
   #   }
-  #   #mapply(f, unlist(lista_macs), MoreArgs=list(data=macs, mac_col="mac", min_or_max=min, time_col="time"))
-  #   ##
-  #   x <- runif(n_distinct(mac_df$MAC), min = 0, max = as.numeric(end-begin)/15)
-  #   plot(x)
-  #   
+  # mapply(f, unlist(lista_macs), MoreArgs=list(data=macs, mac_col="mac", min_or_max=min, time_col="time"))
+  # ##
+  # x <- runif(n_distinct(mac_df$MAC), min = 0, max = as.numeric(end-begin)/15)
+  # plot(x)
+  #    
   # })
-  # 
+   
 })
 
