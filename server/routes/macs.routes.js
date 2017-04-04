@@ -30,17 +30,17 @@ router.get('/', function (req, res) { //devuelve todos los datos
     if (start === undefined || end === undefined) {
         if (end !== undefined) {
             logger.log('debug', 'by interval end');
-            mac.findBeforeEnd(end, res);
+            mac.findBeforeEnd(end, req, res);
         } else if (start !== undefined) {
             logger.log('debug', 'by interval start');
-            mac.findAfterStart(start, res);
+            mac.findAfterStart(start, req, res);
         } else {
             logger.log('debug', 'by interval all undefined');
             res.status(404).send();
         }
     } else {
         logger.log('debug', 'by interval');
-        mac.findByInterval(start, end, res);
+        mac.findByInterval(start, end, req, res);
     }
 });
 
