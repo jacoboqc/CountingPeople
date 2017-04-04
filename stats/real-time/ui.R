@@ -38,14 +38,12 @@ shinyUI(navbarPage(
     mainPanel(tabsetPanel(
       # instant
       tabPanel("Now", fluidPage(
+        fluidRow(column(width = 12, textOutput("time_evol"))),
         fluidRow(column(width = 6,  titlePanel("Macs per second")),
                  column(width = 6,  titlePanel("Time per mac"))),
         fluidRow(column(width = 6,  plotOutput("macs_per_second")),
                  column(width = 6,  plotOutput("time_per_mac"))),
-        fluidRow(column(width = 6,  titlePanel("Time between burst"))),
-        fluidRow(column(
-          width = 6,  plotOutput("macs_per_second_total")
-        ))
+        fluidRow(column(width = 6,  titlePanel("Time between burst")))
       )),
       
       # acumulated
@@ -64,15 +62,9 @@ shinyUI(navbarPage(
              "Now", fluidPage(
                fluidRow(column(width = 6,  titlePanel("Macs per second")),
                         column(width = 6,  titlePanel("Time per mac"))),
-               fluidRow(column(width = 6,  plotOutput("macs_per_second")),
-                        column(width = 6,  plotOutput("time_per_mac"))),
-               fluidRow(column(width = 6,  titlePanel("Time between burst"))),
-               fluidRow(column(
-                 width = 6,  plotOutput("macs_per_second_total")
-               ))
+               fluidRow(column(width = 6,  titlePanel("Time between burst")))
              )
            )),
   
   theme = shinytheme("cerulean")
-  
 ))
