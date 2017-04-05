@@ -16,8 +16,8 @@ library(RColorBrewer)
 
 source("./server-functions.R")
 refresh <- 5
-begin <- as.POSIXct("2017-03-06 17:46:21 CEST")
-# begin <- Sys.time() - 600
+# begin <- Sys.time() - 1200
+begin <- as.POSIXct("2017-03-31 12:20:40 CEST")
 end <- begin + refresh
 mac_df <- data.frame()
 mac_list <- data.frame()
@@ -34,7 +34,7 @@ shinyServer(function(input, output, session) {
     cat(file=stderr(),"Before the API request", "\n")
     # mac_list <<- getAllMacsByTimestamp(begin=begin, end=end,
     #             endpoint = "http://192.168.2.102:3000/macs/interval")
-    mac_list <<- getAllMacs(url = "http://127.0.0.1:3000/macs") 
+    mac_list <<- getAllMacsByTimestamp(begin=begin, end=end)
     cat(file=stderr(),"After the API request", "\n")
     # woul not be necessary if filtering was done at the api
     # important: interval open on one side
@@ -43,7 +43,7 @@ shinyServer(function(input, output, session) {
     cat(file=stderr(),"columns in temporal list", ncol(mac_list), "\n")
     cat(file=stderr(),"rows in permanent list", nrow(mac_df), "\n")
     cat(file=stderr(),"columns in permanent list", ncol(mac_df), "\n")
-    names(mac_list) <<- c("MAC", "device", "ID","timestamp", "Mac_type") # important dont move
+    names(mac_list) <<- c("MAC", "device", "ID","timestamp", "type") # important dont move
     # solves match.names problems in rbind
     mac_df <<- rbind(mac_df, mac_list)
     cat(file=stderr(), "names of permanent and temporal dataset", 
@@ -57,9 +57,8 @@ shinyServer(function(input, output, session) {
   # plots amount inside the system (not fixed yet)
   output$devices_inside <- renderPlot({
     invalidateLater(sec2milis(refresh), session)
-    mac_df$entering <- addEnteringStatus(mac_df)
-    mac_df$inside <- addAmountInside(mac_df)
-    ggplot(mac_df, aes(timestamp,inside)) + geom_histogram(binwidth=1)
+    mac_df$inside <- n_distinct(mac_df$MAC)
+    ggplot(mac_df, aes(timestamp,inside)) + geom_col()
   })
   
   #' amount of unique macs in the interval
@@ -67,25 +66,15 @@ shinyServer(function(input, output, session) {
   #' y axis: mac count per timestamp. 
   output$macs_per_second <- renderPlot({
     invalidateLater(sec2milis(refresh), session)
-    # same mac is counted as new for each timestamp 
-    macs_per_second <- mac_list %>% group_by(timestamp) %>% 
-      summarise(num_macs = n_distinct(MAC))
-    ggplot(macs_per_second, aes(timestamp, num_macs)) + geom_col(color="#99ccff", fill="#99ccff") +
-      fte_theme()
-    # scale_x_datetime("timestamp", labels = "%H:%M")
+    mac_list$inside <- n_distinct(mac_list$MAC)/2
+    ggplot(mac_list, aes(timestamp,inside)) + geom_col()
   })
   
   output$macs_per_second_total <- renderPlot({
     invalidateLater(sec2milis(refresh), session)
-    # same mac is counted as new for each timestamp 
-    macs_per_second <- mac_df %>% group_by("timestamp") %>% 
-      summarise(num_macs = n_distinct(MAC))
-    ggplot(macs_per_second, aes(timestamp, num_macs)) + geom_col() 
-       # scale_x_datetime("timestamp", labels = date_format("%M:%S"))
-  })
-   
-  output$mac_observations <- renderPlot({
-
+    mac_df$inside <- n_distinct(mac_df$MAC)/10
+    ggplot(mac_df, aes(timestamp,inside)) + geom_col()
+    
   })
   
   output$time_per_mac <- renderPlot({
