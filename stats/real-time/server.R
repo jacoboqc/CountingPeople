@@ -15,14 +15,14 @@ library(grid);
 library(RColorBrewer)
 
 source("./server-functions.R")
-
+refresh <- 5
 begin <- as.POSIXct("2017-03-06 17:46:21 CEST")
 # begin <- Sys.time() - 600
 end <- begin + refresh
 mac_df <- data.frame()
 mac_list <- data.frame()
 sec2milis <- function(x){x*1000}
-
+delete <- TRUE
 shinyServer(function(input, output, session) {
 
   output$time_evol <- renderPrint({
@@ -85,21 +85,46 @@ shinyServer(function(input, output, session) {
   })
    
   output$mac_observations <- renderPlot({
-     
+
   })
   
   output$time_per_mac <- renderPlot({
-   ## straw
-   getMinOrMax <- function(mac, data, min_or_max, mac_col, time_col){
-     min_or_max(data[data[mac_col]==mac, time_col])
-    }
-  mapply(f, unlist(lista_macs), MoreArgs=list(data=macs, mac_col="mac", min_or_max=min, time_col="time"))
-  ##
-  x <- runif(n_distinct(mac_df$MAC), min = 0, max = as.numeric(end-begin)/15)
-  plot(x)
+  #  ## straw
+  #  getMinOrMax <- function(mac, data, min_or_max, mac_col, time_col){
+  #    min_or_max(data[data[mac_col]==mac, time_col])
+  #   }
+  # mapply(f, unlist(lista_macs), MoreArgs=list(data=macs, mac_col="mac", min_or_max=min, time_col="time"))
+  # ##
+  # x <- runif(n_distinct(mac_df$MAC), min = 0, max = as.numeric(end-begin)/15)
+  # plot(x)
 
   })
-   
+  
+  output$static_annalyse <- renderPrint({
+    try(system("python3.6 ../static_stats.py", intern = FALSE, wait = FALSE))
+    #try(system("ls ui.R", intern = TRUE, ignore.stderr = TRUE))
+    
+  })
+  
+  output$static_total_mac <- renderImage({
+    if(file.exists("img/time_in_system.jpg")){
+      assign("delete", TRUE, envir = .GlobalEnv)
+      list(src = "img/time_in_system.jpg"
+           # width = 400,
+           # height = 300,
+           # alt = "This is alternate text"
+      )
+    } else{
+      assign("delete", FALSE, envir = .GlobalEnv)
+      invalidateLater(sec2milis(1), session)
+      list(src = "img/loading.gif",
+           contentType = 'image/gif'
+           # width = 400,
+           # height = 300,
+           # alt = "This is alternate text"
+      )
+    }
+    }, deleteFile = delete)
 })
 
 

@@ -58,13 +58,11 @@ shinyUI(navbarPage(
   
   # static tab (generates pdf and upload it)
   tabPanel("Static",
-           tabPanel(
-             "Now", fluidPage(
-               fluidRow(column(width = 6,  titlePanel("Macs per second")),
-                        column(width = 6,  titlePanel("Time per mac"))),
-               fluidRow(column(width = 6,  titlePanel("Time between burst")))
-             )
-           )),
+           fluidPage(
+             fluidRow(column(width= 12, imageOutput("static_total_mac"))),
+             fluidRow(column(width= 12, textOutput("static_annalyse")))
+           ),
   
   theme = shinytheme("cerulean")
+  )
 ))

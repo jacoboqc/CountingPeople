@@ -27,6 +27,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from IPython.display import HTML
 from tabulate import tabulate
+import requests
+import io
 
 HTML('''<script>
 code_show=true; 
@@ -192,8 +194,8 @@ def T_burst(df, show):
     fig, axes = plt.subplots(nrows=2, ncols=1)
     df_t.plot(y='average', kind='hist', rot=0, ax=axes[0], legend=False)
     df_t.plot(y='average', kind='kde', ax=axes[1], legend=False)
-    axes[0].set_xlim(xmin=0, xmax=500)
-    axes[1].set_xlim(xmin=0, xmax=500)
+    axes[0].set_xlim(xmin=0)
+    axes[1].set_xlim(xmin=0)
     plt.xlabel("Time")
     plt.savefig("time_burst.pdf", bbox_inches="tight")
 
@@ -262,7 +264,7 @@ def T_system(df, show):
     gIN.plot(y='time_system', x=gIN['mac'],
              kind='hist', rot=0, ax=axes[0], legend=False)
     gIN.plot(y='time_system', kind='kde', ax=axes[1], legend=False)
-    plt.savefig("time_in_system.pdf", bbox_inches="tight")
+    plt.savefig("img/time_in_system.jpg", bbox_inches="tight")
 
     if show is True:
         plt.show()
@@ -276,12 +278,12 @@ def T_system(df, show):
 # In[17]:
 
 
-# df = consult_api()
-df = read_csv('Captura_Peritos.csv')
+df = consult_api()
+# df = read_csv('Captura_Peritos.csv')
 
 
 # In[18]:
-"""
+
 mac_activty_good(df, False)
 
 
@@ -297,7 +299,7 @@ origin_activity(df, False)
 
 # In[21]:
 
-mac_occurs(df, True)
+mac_occurs(df, False)
 
 
 # In[22]:
@@ -308,6 +310,5 @@ mac_system(df, False)
 # In[23]:
 
 T_burst(df, False)
-"""
 
-T_system(df, True)
+T_system(df, False)
