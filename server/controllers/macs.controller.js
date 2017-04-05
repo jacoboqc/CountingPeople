@@ -6,7 +6,7 @@ var macs = {};
 var fieldsIngored = '-__v -_id -origin._id';
 var macRegex = '[A-Fa-f0-9]{64}';
 var dateRegex = /^(\d{4})\/(\d{2}|\d{1})\/(\d{2}|\d{1})-(\d{2}|\d{1})\:(\d{2}|\d{1})\:(\d{2}|\d{1})/g;
-var fields = ['mac', 'device', 'ID', 'time'];
+var fields = ['mac', 'device', 'ID', 'time', 'type'];
 
 macs.getAll = function (req, res) {
     MacModel.find({}, fieldsIngored, function (err, data) {
@@ -37,9 +37,9 @@ macs.addMacs = function (req, res) {
             ID: req.body.origin.ID,
             time: new Date(req.body.origin.time)
         }],
-        device: req.body.device
+        device: req.body.device,
+        type: req.body.type
     };
-
     try {
         if (!req.body.origin.time.match(dateRegex)) {
             res.status(400).send('Invalid date');
@@ -102,7 +102,7 @@ macs.findAfterStart = function (start, req, res) {
 };
 
 macs.findByInterval = function (start, end, req, res) {
-    if (!start.match(dateRegex)|| !end.match(dateRegex)) {
+    if (!start.match(dateRegex) || !end.match(dateRegex)) {
         logger.log('error', 'Start/End empty or cannot parse');
         res.status(400).send('Start/End empty or cannot parse');
     } else {
@@ -135,6 +135,7 @@ function __parseDBResponseToJSON(data) {
                 time: __dateStringFormat(data[i].origin[j].time)
             });
         }
+        temp.type = data[i].type;
         dataView.push(temp);
     }
     return dataView;
@@ -156,7 +157,6 @@ function __updateMac(newData, oldData) {
     oldData[0].origin.forEach(function (item) {
         newData.origin.push(item);
     });
-
     MacModel.update({ 'mac': newData.mac }, newData, {}, function (err, num) {
         if (err) {
             return err;
@@ -217,13 +217,14 @@ function __findDB(query, ignore, req, res) {
 function __toCSV(data) {
     var dataCSV = [];
     data.forEach(function (mac) {
-        var macTemp = {
-            mac: mac.mac,
-            device: mac.device,
-        };
         mac.origin.forEach(function (origin) {
-            macTemp.ID = origin.ID;
-            macTemp.time = origin.time;
+            var macTemp = {
+                mac: mac.mac,
+                device: mac.device,
+                ID:  origin.ID,
+                time: origin.time,
+                type: mac.type
+            };
             dataCSV.push(macTemp);
         }, this);
     }, this);
