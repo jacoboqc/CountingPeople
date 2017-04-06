@@ -1,5 +1,7 @@
 library(dplyr)
 library(tidyr)
+library(scales)
+library(ggplot2)
 
 #' Reads csv with macs, timestamp, antenna ID and mac type (random or fixed)
 #' @param filepath string. Path to file
@@ -82,8 +84,15 @@ count_new_macs_interval <- function(data, time_col, mac_col, interval){
 #' @param count_col string or number. Column with counted macs
 #' @param data dataframe
 new_macs_accumulated <- function(data, count_col, time_col){
-  # FIXME: mac_count is NSE, must be converted somehow
-  data %>% transmute_(time_col,macs_inside = cumsum(mac_count)) 
+  # FIXME: time, mac_count is NSE, must be converted somehow
+  data %>% transmute(time,macs_inside = cumsum(mac_count)) 
+}
+
+plot_date_count <- function(data, date_col, count_col, time_breaks, 
+                            geom = geom_col()){
+  # aes_string allows passing columns as strings
+  ggplot(data, aes_string(x = date_col, y = count_col)) + geom +
+    scale_x_datetime(breaks = date_breaks(time_breaks), date_labels = "%M:%S")
 }
   
 

@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F)
 
 # Whole data mac count
 ```{r}
-
 source("./static-analysis.R")
 mac_data <- read_capture("./Captura_Peritos.csv")
 #> names(mac_data)
@@ -25,11 +24,24 @@ q90 <- quantile(mac_distro$mac_count, probs = 0.9)
 hist(filter(mac_distro, mac_count <= q90)$mac_count, xlab = "Mac appearances",
      main = "Mac count distribution")
 ```
+
 # Macs per time interval. 
-Both the previously seen ones and the new ones are counted
+Both the previously seen ones and the new ones are counted. Returns same results as IPYNotebook
 ```{r}
-interval_mac_count <- count_macs_interval(mac_data, "time", "mac", "1 sec")
+interval_mac_count <- count_macs_interval(mac_data, "time", "mac", "45 sec")
+plot_date_count(interval_mac_count, "time", "mac_count", "45 sec")
 ```
 
+# New macs per interval
+```{r}
+new_macs_count <- count_new_macs_interval(mac_data, "time", "mac", "45 sec")
+plot_date_count(new_macs_count, "time", "mac_count", "45 secs")
+```
+
+## Cumsum
+```{r}
+new_macs_evolution <- new_macs_accumulated(new_macs_count, "mac_count", "time")
+plot_date_count(new_macs_evolution, "time", "macs_inside", "45 sec", geom_line())
+```
 
 
