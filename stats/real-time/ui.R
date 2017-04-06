@@ -41,7 +41,8 @@ shinyUI(navbarPage(
                  column(width = 6,  titlePanel("New macs per second"))),
         fluidRow(column(width = 6,  plotOutput("macs_per_second")),
                  column(width = 6,  plotOutput("new_macs_per_second"))),
-        fluidRow(column(width = 6,  titlePanel("Time between burst")))
+        fluidRow(column(width = 6,  titlePanel("Time between burst"))),
+        fluidRow(column(width = 6,  plotOutput("time_between_bursts")))
       )),
       
       # acumulated

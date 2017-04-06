@@ -88,6 +88,14 @@ new_macs_accumulated <- function(data, count_col, time_col){
   data %>% transmute(time,macs_inside = cumsum(mac_count)) 
 }
 
+time_between_bursts <- function(data, mac_col, time_col){
+  # FIXME: convert time_col to SE
+  xx <- mac_data %>% group_by_(mac_col) %>%
+    mutate(timediff = difftime(time,lead(time), units="secs")) %>%
+    filter(!is.na(timediff)) %>% summarise(t_burst = mean(timediff)) %>%
+    filter(t_burst > 0)
+}
+
 plot_date_count <- function(data, date_col, count_col, time_breaks, 
                             geom = geom_col()){
   # aes_string allows passing columns as strings

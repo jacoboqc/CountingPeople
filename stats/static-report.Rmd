@@ -43,5 +43,10 @@ plot_date_count(new_macs_count, "time", "mac_count", "45 secs")
 new_macs_evolution <- new_macs_accumulated(new_macs_count, "mac_count", "time")
 plot_date_count(new_macs_evolution, "time", "macs_inside", "45 sec", geom_line())
 ```
+# Time between bursts. Distribution
+```{r}
+t_bursts <- time_between_bursts(mac_data, "mac", "time")
+hist(as.numeric(t_bursts$t_burst), main="Average time between bursts")
+```
 
 
