@@ -4,29 +4,31 @@
 #
 # http://shiny.rstudio.com
 #
-
 library(shiny)
 library(dplyr)
 library(tidyr)
 library(httr)
 library(ggplot2)
-library(scales); 
-library(grid); 
+library(scales)
+library(grid)
 library(RColorBrewer)
 
 source("./server-functions.R")
+source("../static-analysis.R")
+
 refresh <- 5
 # begin <- Sys.time() - 1200
-begin <- as.POSIXct("2017-03-31 12:20:40 CEST")
+begin <- as.POSIXct("2017-03-31 12:08:40 CEST")
 end <- begin + refresh
 mac_df <- data.frame()
-mac_list <- data.frame()
+mac_temp <- data.frame()
 sec2milis <- function(x){x*1000}
 delete <- TRUE
+
 shinyServer(function(input, output, session) {
 
   output$time_evol <- renderPrint({
-    refresh <- input$s
+    refresh <<- input$s
     cat(file=stderr(),refresh, "------------------- \n")
     cat(file=stderr(),"Before the API request", "\n")
     
@@ -38,42 +40,34 @@ shinyServer(function(input, output, session) {
     cat(file=stderr(),"After the API request", "\n")
     # woul not be necessary if filtering was done at the api
     # important: interval open on one side
-    mac_list <<- mac_list[mac_list$time >= begin & mac_list$time < end,]
-    cat(file=stderr(),"rows in temporal list", nrow(mac_list), "\n")
-    cat(file=stderr(),"columns in temporal list", ncol(mac_list), "\n")
+    mac_temp <<- mac_temp[mac_temp$time >= begin & mac_temp$time < end,]
+    
+    cat(file=stderr(),"rows in temporal list", nrow(mac_temp), "\n")
+    cat(file=stderr(),"columns in temporal list", ncol(mac_temp), "\n")
     cat(file=stderr(),"rows in permanent list", nrow(mac_df), "\n")
     cat(file=stderr(),"columns in permanent list", ncol(mac_df), "\n")
-    names(mac_list) <<- c("MAC", "device", "ID","timestamp", "type") # important dont move
+    names(mac_temp) <<- c("mac", "device", "ID","time", "type") # important dont move
     # solves match.names problems in rbind
-    mac_df <<- rbind(mac_df, mac_list)
+    mac_df <<- rbind(mac_df, mac_temp)
     cat(file=stderr(), "names of permanent and temporal dataset", 
-        names(mac_df), names(mac_list), "\n")
+        names(mac_df), names(mac_temp), "\n")
     print(begin)
     print(end)
-    begin <<- begin + refresh
-    end <<- end + refresh
+    begin <<- begin + input$s
+    end <<- end + input$s
   })
   
-  # plots amount inside the system (not fixed yet)
-  output$devices_inside <- renderPlot({
-    invalidateLater(sec2milis(refresh), session)
-    mac_df$inside <- n_distinct(mac_df$MAC)
-    ggplot(mac_df, aes(timestamp,inside)) + geom_col()
-  })
   
-  #' amount of unique macs in the interval
-  #' x axis: time
-  #' y axis: mac count per timestamp. 
   output$macs_per_second <- renderPlot({
     invalidateLater(sec2milis(refresh), session)
-    mac_list$inside <- n_distinct(mac_list$MAC)/2
-    ggplot(mac_list, aes(timestamp,inside)) + geom_col()
+    interval_mac_count <- count_macs_interval(mac_temp, "time", "mac", "1 sec")
+    plot_date_count(interval_mac_count, "time", "mac_count", "1 sec")
   })
   
   output$macs_per_second_total <- renderPlot({
     invalidateLater(sec2milis(refresh), session)
-    mac_df$inside <- n_distinct(mac_df$MAC)/10
-    ggplot(mac_df, aes(timestamp,inside)) + geom_col()
+    interval_mac_count <- count_macs_interval(mac_df, "time", "mac", "1 sec")
+    plot_date_count(interval_mac_count, "time", "mac_count", "1 sec")
     
   })
   
@@ -114,8 +108,15 @@ shinyServer(function(input, output, session) {
       )
     }
     }, deleteFile = delete)
-})
 
+  # amount of unique macs in the interval
+  output$new_macs_per_second <- renderPlot({
+    invalidateLater(sec2milis(refresh), session)
+    new_macs_count <- count_new_macs_interval(mac_temp, "time", "mac", "1 sec")
+    plot_date_count(new_macs_count, "time", "mac_count", "1 sec")
+  })
+  
+})
 
 fte_theme <- function() {
   

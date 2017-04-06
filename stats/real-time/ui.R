@@ -4,7 +4,6 @@
 # You can find out more about building applications with Shiny here:
 #
 # http://shiny.rstudio.com
-#
 
 library(shiny)
 library(shinythemes)
@@ -39,10 +38,10 @@ shinyUI(navbarPage(
       # instant
       tabPanel("Now", fluidPage(
         fluidRow(column(width = 12, textOutput("time_evol"))),
-        fluidRow(column(width = 6,  titlePanel("Macs per second")),
-                 column(width = 6,  titlePanel("Time per mac"))),
+        fluidRow(column(width = 6,  titlePanel("Mac count per second")),
+                 column(width = 6,  titlePanel("New macs per second"))),
         fluidRow(column(width = 6,  plotOutput("macs_per_second")),
-                 column(width = 6,  plotOutput("time_per_mac"))),
+                 column(width = 6,  plotOutput("new_macs_per_second"))),
         fluidRow(column(width = 6,  titlePanel("Time between burst")))
       )),
       
