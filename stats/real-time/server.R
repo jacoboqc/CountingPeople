@@ -116,6 +116,11 @@ shinyServer(function(input, output, session) {
     plot_date_count(new_macs_count, "time", "mac_count", "1 sec")
   })
   
+  output$time_between_bursts <- renderPlot({
+    invalidateLater(sec2milis(refresh), session)
+    t_bursts <- time_between_bursts(mac_df, "mac", "time")
+    hist(as.numeric(t_bursts$t_burst), main="Average time between bursts")
+  })
 })
 
 fte_theme <- function() {
