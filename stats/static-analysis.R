@@ -11,34 +11,79 @@ read_capture <- function(filepath, timeformat = "%Y/%m/%d-%H:%M:%S"){
   data
 }
 
+#' Returns appearances of each mac for the whole interval
+#' @note equals ipython static function "mac_occurs"
+#' @param mac_col string or number. Column name of the mac variable
+mac_count_distribution <- function(data, mac_col){
+ counted <- data %>% count_(mac_col) 
+ names(counted) <- c(mac_col, "mac_count")
+ counted
+}
+
 #' Counts appearances of each unique mac by interval
 #' @param data macs dataframe
-#' @param time_col string. Column name of the timestamp variable
-#' @param mac_col string. Column name of the mac variable
+#' @param time_col string or number. Column of the timestamp variable
+#' @param mac_col string or number. Column of the mac variable
 #' @param interval passe to cut. Format: "integer unit". See ?cut
-#' @returns dataframe with 3 columns: timestamp, mac and count. 
-#'          the timestamps are not unique, as many as macs
+#' @returns dataframe with 3 columns: time_col, mac and count. 
+#'          many macs per interval
 #' @example: distinct_mac(df, "time", "mac", "2 sec")
-distinct_mac_interval <- function(data, time_col, mac_col, interval){
+distinct_macs_interval <- function(data, time_col, mac_col, interval){
   intervals <- cut(data[[time_col]], interval)
   data[,time_col] <- intervals
-  data %>% group_by_(time_col) %>% count_(mac_col)
-  names(data) <- c(time_col, mac_col, "mac_count")
-  data
+  counted <- data %>% group_by_(time_col) %>% count_(mac_col)
+  names(counted) <- c(time_col, mac_col, "mac_count")
+  counted[,time_col] <- as.POSIXct(counted[,time_col])
+  counted
 }
 
 #' Counts appearances of all macs by interval
 #' @note equals ipython static function "origin_activity"
 #' @param data macs dataframe
-#' @param time_col string. Column name of the timestamp variable
-#' @param mac_col string. Column name of the mac variable
+#' @param time_col string or number. Column of the timestamp variable
+#' @param mac_col string or number. Column of the mac variable
 #' @param interval passe to cut. Format: "integer unit". See ?cut
-#' @returns dataframe with 2 columns: timestamp and mac_count. 
+#' @returns dataframe with 2 columns: time_col and mac_count. 
 #'          the timestamps are not unique, as many as macs
 #' @example: distinct_mac(df, "time", "mac", "2 sec")
-mac_count_interval <- function(data, time_col, mac_col, interval){
+count_macs_interval <- function(data, time_col, mac_col, interval){
   intervals <- cut(data[[time_col]], interval)
   data[,time_col] <- intervals
-  data %>% group_by_(time_col) %>% count_(mac_col) %>% summarise(mac_count = sum(n))
+  counted <- data %>% group_by_(time_col) %>% count_(mac_col) %>% summarise(mac_count = sum(n))
+  # note: every operation turns data into a factor.
+  counted[[time_col]] <- as.POSIXct(counted[[time_col]])
+  counted
 }
+
+#' Counts appearances of macs by interval, only if they are new
+#' @note equals ipython static function "origin_activity"
+#' @param data macs dataframe
+#' @param time_col string or number. Column of the timestamp variable
+#' @param mac_col string or number. Column of the mac variable
+#' @param interval passe to cut. Format: "integer unit". See ?cut
+#' @returns dataframe with 2 columns: time_col and mac_count. 
+#'          the timestamps are not unique, as many as macs
+#' @example: distinct_mac(df, "time", "mac", "2 sec")
+count_new_macs_interval <- function(data, time_col, mac_col, interval){
+  intervals <- cut(data[[time_col]], interval)
+  data[,time_col] <- intervals
+  # FIXME: time is the column name in NSE (non standard evaluation), should 
+  # be obtained from time_col somehow
+  counted <- data %>% group_by_(mac_col) %>% top_n(-1, time) %>% ungroup() %>% 
+    distinct_(mac_col,time_col) %>% # top_n does not remove duplicates
+    # so far, selected first appearances for each mac
+    # then macs are counted for each interval
+    group_by_(time_col) %>% count_(mac_col) %>% summarise(mac_count = sum(n))
+  counted[[time_col]] <- as.POSIXct(counted[[time_col]])
+  counted
+}
+
+#' Evolution of new macs seen by the system. Always increases (not devices inside)
+#' @param count_col string or number. Column with counted macs
+#' @param data dataframe
+new_macs_accumulated <- function(data, count_col, time_col){
+  # FIXME: mac_count is NSE, must be converted somehow
+  data %>% transmute_(time_col,macs_inside = cumsum(mac_count)) 
+}
+  
 
