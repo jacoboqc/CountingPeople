@@ -18,7 +18,7 @@ source("../static-analysis.R")
 
 refresh <- 5
 # begin <- Sys.time() - 1200
-begin <- as.POSIXct("2017-03-31 12:08:40 CEST")
+begin <- as.POSIXct("2017-04-06-11:25:10 CEST")
 end <- begin + refresh
 mac_df <- data.frame()
 mac_temp <- data.frame()

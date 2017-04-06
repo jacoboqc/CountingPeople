@@ -61,8 +61,8 @@ shinyUI(navbarPage(
            fluidPage(
              fluidRow(column(width= 12, imageOutput("static_total_mac"))),
              fluidRow(column(width= 12, textOutput("static_annalyse")))
-           ),
-  
+           )
+  ),
   theme = shinytheme("cerulean")
-  )
+  
 ))
