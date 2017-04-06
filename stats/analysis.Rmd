@@ -1,0 +1,79 @@
+---
+output:
+  pdf_document: default
+---
+
+# Instroductory analysis
+Situation: people going inside and outside of a discoteque through two gates
+```{r}
+data <- read.csv("data.csv")
+library(dplyr)
+library(tidyr)
+barplot(table(data$receptor), main="Events at each receptor")
+num_macs <- count(data, MAC)$n
+mean(num_macs)
+sd(num_macs)
+qqnorm(num_macs)
+qqline(num_macs)
+```
+
+## Macs distribution
+It seems that the distribution the repetition of macs is a bit right-skewed. Seeing it in a histogramm, we can confirm this:
+```{r}
+hist(num_macs, freq = F)
+lines(seq(min(num_macs), max(num_macs), 0.1) ,dnorm(seq(min(num_macs), max(num_macs), by = 0.1),  mean = mean(num_macs), sd=sd(num_macs)))
+```
+Since this data is random and each timestamp a mac is generated with an uniform probability between all posibilities, and since the times a mac shows up is a sum of uniforms, due to the law of big numbers we can asume normality. 
+TODO: normality test
+
+## Devices appearing only once
+```{r}
+# Only once
+sum(num_macs==1)
+# More than once
+sum(num_macs!=1)
+```
+
+# Evolution of people inside the system
+
+```{r}
+# new column: is entering (T or F)
+grouped <- data %>% group_by(MAC) %>%  mutate(
+  entering=as.logical(rank(timestamp) %% 2))
+# Check if column "entering" changes each time a MAC appears
+grouped[(grouped$MAC=="90b7"),]
+# Amount of people in each timestamp: sum of "T" until then
+accumulated <- ungroup(grouped) %>% mutate(
+  inside=cumsum(entering)-cumsum(!entering))
+head(accumulated,40)
+# Diplays the state of the system each time 90b7 appears
+accumulated[(accumulated$MAC=="90b7"),]
+smoothScatter(accumulated$timestamp, accumulated$inside, xlab = "Timestamp", ylab="Amount of devices", main="Devices inside the system")
+
+```
+
+# Distribution of time inside the system
+```{r}
+  # data %>% filter(timestamp <= ts) %>% group_by(MAC)
+time_cum <- function(data, mac, ts){
+  mac_info <- data %>% select(timestamp, MAC, entering) %>% filter(timestamp <= ts & MAC == mac)
+  time_inside <- NULL
+  if(last(mac_info$entering)==FALSE){
+    # that is, equal size of vectors, out of the system
+    time_inside <- subset(mac_info, entering==F,select=timestamp) - subset(mac_info, entering==T, select=timestamp)
+  } else{
+    # that is, unequal size of vector, must add last timestamp to the data frame
+    # last timestamp: that of the desired time window, or the whole meassure
+    time_inside <- rbind(subset(mac_info, entering==F,select=timestamp),min(max(data$timestamp),ts))- subset(mac_info, entering==T, select=timestamp)
+  }
+  time_inside
+}
+# using grouped causes infite processing time
+time_cum(accumulated, "cafe", 1000000)
+# only 1000 macs are used, the full set is too big and takes too long
+mac_list <- sample_n(unique(accumulated), 1000)$MAC
+vec <- mapply(time_cum,mac_list, MoreArgs = list(data=accumulated,ts=10000000)) 
+hist(sapply(vec,sum), main = "Time inside the system", xlab="seconds", freq = T)
+```
+
+

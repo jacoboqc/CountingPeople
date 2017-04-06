@@ -6,7 +6,17 @@ log/
 
 #Python
 __pycache__/
+**/*.pdf
+**/*.csv
+stats/.ipynb_checkpoints/*
 
 #Vagrant
 .vagrant/
 *.pcapng
+
+# R
+/**/*.Rhistory 
+
+# Other
+.swp
+.Rproj.user
