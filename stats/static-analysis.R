@@ -90,7 +90,7 @@ new_macs_accumulated <- function(data, count_col, time_col){
 
 time_between_bursts <- function(data, mac_col, time_col){
   # FIXME: convert time_col to SE
-  xx <- mac_data %>% group_by_(mac_col) %>%
+  xx <- data %>% group_by_(mac_col) %>%
     mutate(timediff = difftime(time,lead(time), units="secs")) %>%
     filter(!is.na(timediff)) %>% summarise(t_burst = mean(timediff)) %>%
     filter(t_burst > 0)
