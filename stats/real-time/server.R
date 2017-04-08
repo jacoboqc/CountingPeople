@@ -18,7 +18,7 @@ source("../static-analysis.R")
 
 refresh <- 5
 # begin <- Sys.time() - 1200
-begin <- as.POSIXct("2017-04-06-11:25:10 CEST")
+begin <- as.POSIXct("2017-04-06 11:25:05 CEST")
 end <- begin + refresh
 mac_df <- data.frame()
 mac_temp <- data.frame()
@@ -29,15 +29,10 @@ shinyServer(function(input, output, session) {
 
   output$time_evol <- renderPrint({
     refresh <<- input$s
-    cat(file=stderr(),refresh, "------------------- \n")
     cat(file=stderr(),"Before the API request", "\n")
     
     invalidateLater(sec2milis(refresh), session)
-    cat(file=stderr(),"Before the API request", "\n")
-    # mac_list <<- getAllMacsByTimestamp(begin=begin, end=end,
-    #             endpoint = "http://192.168.2.102:3000/macs/interval")
-    mac_list <<- getAllMacsByTimestamp(begin=begin, end=end)
-    cat(file=stderr(),"After the API request", "\n")
+    mac_temp <<- getAllMacsByTimestamp(begin=begin, end=end)
     # woul not be necessary if filtering was done at the api
     # important: interval open on one side
     mac_temp <<- mac_temp[mac_temp$time >= begin & mac_temp$time < end,]
@@ -53,8 +48,8 @@ shinyServer(function(input, output, session) {
         names(mac_df), names(mac_temp), "\n")
     print(begin)
     print(end)
-    begin <<- begin + input$s
-    end <<- end + input$s
+    begin <<- begin + refresh
+    end <<- end + refresh
   })
   
   
