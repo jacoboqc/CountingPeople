@@ -12,6 +12,7 @@ library(ggplot2)
 library(scales)
 library(grid)
 library(RColorBrewer)
+library(rmarkdown)
 
 source("./server-functions.R")
 source("../static-analysis.R")
@@ -79,10 +80,16 @@ shinyServer(function(input, output, session) {
 
   })
   
-  output$static_annalyse <- renderPrint({
-    try(system("python3.6 ../static_stats.py", intern = FALSE, wait = FALSE))
-    #try(system("ls ui.R", intern = TRUE, ignore.stderr = TRUE))
-    
+  observeEvent(input$static_annalyse, {
+    render("../static-report.Rmd")
+
+    insertUI(
+      selector = "#content_iframe",
+      where = "beforeEnd",
+      ui = includeHTML("../static-report.html")
+    )
+
+    session$sendCustomMessage(type = 'shiny_message', "Annalyse ready")
   })
   
   output$static_total_mac <- renderImage({
