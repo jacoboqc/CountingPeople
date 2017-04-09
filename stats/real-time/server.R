@@ -12,6 +12,7 @@ library(ggplot2)
 library(scales)
 library(grid)
 library(RColorBrewer)
+library(rmarkdown)
 
 source("./server-functions.R")
 source("../static-analysis.R")
@@ -79,25 +80,6 @@ shinyServer(function(input, output, session) {
 
   })
   
-  output$static_annalyse <- renderPrint({
-    try(system("python3.6 ../static_stats.py", intern = FALSE, wait = FALSE))
-    #try(system("ls ui.R", intern = TRUE, ignore.stderr = TRUE))
-    
-  })
-  
-  output$static_total_mac <- renderImage({
-    if(file.exists("img/time_in_system.jpg")){
-      assign("delete", TRUE, envir = .GlobalEnv)
-      list(src = "img/time_in_system.jpg")
-    } else{
-      assign("delete", FALSE, envir = .GlobalEnv)
-      invalidateLater(sec2milis(1), session)
-      list(src = "img/loading.gif",
-           contentType = 'image/gif'
-      )
-    }
-    }, deleteFile = delete)
-
   # amount of unique macs in the interval
   output$new_macs_per_second <- renderPlot({
     invalidateLater(sec2milis(refresh), session)
@@ -109,5 +91,16 @@ shinyServer(function(input, output, session) {
     invalidateLater(sec2milis(refresh), session)
     t_bursts <- time_between_bursts(mac_df, "mac", "time")
     hist(as.numeric(t_bursts$t_burst), main="Average time between bursts", col="#99ccff", fill="#99ccff")
+  })
+
+  # Generates the static report
+  observeEvent(input$static_annalyse, {
+    render("../static-report.Rmd")
+    insertUI(
+      selector = "#content_iframe",
+      where = "beforeEnd",
+      ui = includeHTML("../static-report.html")
+    )
+    session$sendCustomMessage(type = 'shiny_message', "Annalyse ready")
   })
 })

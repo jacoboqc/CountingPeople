@@ -2,17 +2,29 @@ library(dplyr)
 library(tidyr)
 library(scales)
 library(ggplot2)
+library(httr)
 
 #' Reads csv with macs, timestamp, antenna ID and mac type (random or fixed)
 #' @param filepath string. Path to file
 #' @param timeformat string. 
 #' @returns dataframe with timestamps in POSIXct format
-read_capture <- function(filepath, timeformat = "%Y/%m/%d-%H:%M:%S"){
+read_capture_file <- function(filepath, timeformat = "%Y/%m/%d-%H:%M:%S"){
   data <- read.csv(filepath)
   data$time <- as.POSIXct(strptime(data$time, timeformat))
   data
 }
 
+#' Receive csv from server with macs, timestamp, antenna ID and mac type (random or fixed)
+#' @param url string. url to server 
+#' @param timeformat string. 
+#' @returns dataframe with timestamps in POSIXct format
+read_capture_server <- function(url, timeformat = "%Y/%m/%d-%H:%M:%S"){
+  r<- GET(url, accept("text/csv"))  
+  data <- read.csv(text=content(r, "text"), header=T)
+  # reads all columns as factors, convert if neccesary
+  data$time <- as.POSIXct(strptime(data$time, timeformat))
+  data
+}
 #' Returns appearances of each mac for the whole interval
 #' @note equals ipython static function "mac_occurs"
 #' @param mac_col string or number. Column name of the mac variable

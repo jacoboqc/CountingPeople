@@ -59,9 +59,11 @@ shinyUI(navbarPage(
   # static tab (generates pdf and upload it)
   tabPanel("Static",
            fluidPage(
-             fluidRow(column(width= 12, imageOutput("static_total_mac"))),
-             fluidRow(column(width= 12, textOutput("static_annalyse")))
-           )
-    ),
+             includeScript("background.js"), 
+             actionButton("static_annalyse", "Generate a static annalyse"),
+              div(id="content_iframe")
+             )
+  ),
   theme = shinytheme("cerulean")
+  
 ))
