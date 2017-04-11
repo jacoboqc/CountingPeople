@@ -1,6 +1,6 @@
 # Counting People
 
-This project aims for providing a simple way for counting people in big crowds, detecting the Wi-Fi signal from their personal smartphones.
+This project aims to provide a simple way for counting people in big crowds, detecting the Wi-Fi signal from their personal smartphones.
 
 ## Structure
 
