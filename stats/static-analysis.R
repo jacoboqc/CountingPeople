@@ -101,11 +101,24 @@ new_macs_accumulated <- function(data, count_col, time_col){
 }
 
 time_between_bursts <- function(data, mac_col, time_col){
-  # FIXME: convert time_col to SE
+  # FIXME: convert time_col and type to SE
   xx <- data %>% group_by_(mac_col) %>%
     mutate(timediff = difftime(time,lead(time), units="secs")) %>%
     filter(!is.na(timediff)) %>% summarise(t_burst = mean(timediff)) %>%
     filter(t_burst > 0)
+}
+
+binned_mac_pairs <- function(data, time_col, interval, mac_filter){
+  binned <- bin_in_intervals(data, time_col, interval)
+  # FIXME use SE
+  filtered_binned <- binned %>% 
+    select(time, mac, type) %>% filter(mac %in% mac_filter)
+}
+
+bin_in_intervals <- function(data, reference_col, interval){
+  intervals <- cut(data[[reference_col]], interval)
+  data[,reference_col] <- as.POSIXct(intervals)
+  return(data)
 }
 
 plot_date_count <- function(data, date_col, count_col, time_breaks, 
