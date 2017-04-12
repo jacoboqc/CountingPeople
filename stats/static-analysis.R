@@ -34,7 +34,7 @@ mac_count_distribution <- function(data, mac_col){
  counted
 }
 
-#' Counts appearances of each unique mac by interval
+#' Counts appearances of each unique mac for each interval
 #' @param data macs dataframe
 #' @param time_col string or number. Column of the timestamp variable
 #' @param mac_col string or number. Column of the mac variable
@@ -51,7 +51,7 @@ distinct_macs_interval <- function(data, time_col, mac_col, interval){
   counted
 }
 
-#' Counts appearances of all macs by interval
+#' Counts appearances of all probe-requests by interval
 #' @note equals ipython static function "origin_activity"
 #' @param data macs dataframe
 #' @param time_col string or number. Column of the timestamp variable
@@ -69,16 +69,35 @@ count_macs_interval <- function(data, time_col, mac_col, interval){
   counted
 }
 
-#' Counts appearances of macs by interval, only if they are new
+#' Counts devices per interval. I.e, system ocupation
+#' @param data macs dataframe
+#' @param time_col string or number. Column of the timestamp variable
+#' @param mac_col string or number. Column of the mac variable
+#' @param interval passe to cut. Format: "integer unit". See ?cut
+#' @returns dataframe with 2 columns: time_col and device_count. 
+#'          the timestamps are not unique, as many as macs
+#' @example: distinct_mac(df, "time", "mac", "2 sec")
+count_devices_interval <- function(data, time_col, mac_col, interval){
+  intervals <- cut(data[[time_col]], interval)
+  data[,time_col] <- intervals
+  # FIXME: use standard evaluation
+  counted <- data %>% group_by_(time_col) %>% 
+    summarise(device_count = n_distinct(mac))
+  # note: every operation turns data into a factor.
+  counted[[time_col]] <- as.POSIXct(counted[[time_col]])
+  counted
+}
+
+#' Counts appearances of devices by interval, only if they are new
 #' @note equals ipython static function "origin_activity"
 #' @param data macs dataframe
 #' @param time_col string or number. Column of the timestamp variable
 #' @param mac_col string or number. Column of the mac variable
 #' @param interval passe to cut. Format: "integer unit". See ?cut
-#' @returns dataframe with 2 columns: time_col and mac_count. 
+#' @returns dataframe with 2 columns: time_col and dev_count. 
 #'          the timestamps are not unique, as many as macs
 #' @example: distinct_mac(df, "time", "mac", "2 sec")
-count_new_macs_interval <- function(data, time_col, mac_col, interval){
+count_new_devices_interval <- function(data, time_col, mac_col, interval){
   intervals <- cut(data[[time_col]], interval)
   data[,time_col] <- intervals
   # FIXME: time is the column name in NSE (non standard evaluation), should 
@@ -87,7 +106,7 @@ count_new_macs_interval <- function(data, time_col, mac_col, interval){
     distinct_(mac_col,time_col) %>% # top_n does not remove duplicates
     # so far, selected first appearances for each mac
     # then macs are counted for each interval
-    group_by_(time_col) %>% count_(mac_col) %>% summarise(mac_count = sum(n))
+    group_by_(time_col) %>% count_(mac_col) %>% summarise(dev_count = sum(n))
   counted[[time_col]] <- as.POSIXct(counted[[time_col]])
   counted
 }
@@ -95,9 +114,9 @@ count_new_macs_interval <- function(data, time_col, mac_col, interval){
 #' Evolution of new macs seen by the system. Always increases (not devices inside)
 #' @param count_col string or number. Column with counted macs
 #' @param data dataframe
-new_macs_accumulated <- function(data, count_col, time_col){
+devices_accumulated <- function(data, count_col, time_col){
   # FIXME: time, mac_count is NSE, must be converted somehow
-  data %>% transmute(time,macs_inside = cumsum(mac_count)) 
+  data %>% transmute(time, devs_cumsum = cumsum(dev_count)) 
 }
 
 time_between_bursts <- function(data, mac_col, time_col){
