@@ -27,11 +27,26 @@ hist(filter(mac_distro, mac_count <= q80)$mac_count, xlab = "Mac appearances",
      main = "Mac count distribution Q_80")
 ```
 
-# Probe Requests per time interval. 
-Plots packets captured by the antennass, that is, different macs seen per interval. as well as its distribution. Returns same results as IPYNotebook function origin_activity
+# Time between bursts. Distribution.
+important stuff: we want at least 30 samples for the interval from now on. Therefore, best method would be choosing a 90% quantil or, if it is too big, the largest time interval that splits hour data in no less than 30 intervals.
+
+For now, average suffices. 
+
 ```{r}
-interval_mac_count <- count_macs_interval(fixed_data, "time", "mac", "60 sec")
-plot_date_count(interval_mac_count, "time", "mac_count", "60 sec")
+t_bursts <- time_between_bursts(fixed_data, "mac", "time")
+# histograms and means need round values, not dates
+t_bursts$t_burst <- as.numeric(t_bursts$t_burst)
+hist(t_bursts$t_burst, main="Average time between bursts")
+T_avg <- mean(t_bursts$t_burst)
+round_secs <- paste(round(T_avg), "secs")
+```
+
+# Probe Requests per time interval. 
+Plots packets captured by the antennass, that is, different macs seen per interval. as well as its distribution. Returns same results as IPYNotebook function origin_activity.
+
+```{r}
+interval_mac_count <- count_macs_interval(fixed_data, "time", "mac", round_secs)
+plot_date_count(interval_mac_count, "time", "mac_count", round_secs)
 hist(interval_mac_count$mac_count, main = "Probe Request Count Distribution")
 # TODO: add legend (red = mean), function = plot histogramm with mean
 abline(v = mean(interval_mac_count$mac_count), col = "red")
@@ -40,10 +55,11 @@ abline(v = mean(interval_mac_count$mac_count), col = "red")
 # System occupation: devices meassured by interval
 Counts each different mac per interval to obtain the total amount of devices. Plots its distribution. Red line: mean, i.e, average ocupation of devices in our antenna range in that interval
 
-Interval chosen: average time burst. A more precise value could be chosen (see time burst calculation)
+Interval chosen: average time burst. A more precise value could be chosen (see time burst calculation).
+
 ```{r}
-device_count <- count_devices_interval(fixed_data, "time", "mac", "60 sec")
-plot_date_count(device_count, "time", "device_count", "60 sec")
+device_count <- count_devices_interval(fixed_data, "time", "mac", round_secs)
+plot_date_count(device_count, "time", "device_count", round_secs)
 hist(device_count$device_count, main = "System Occupation Distribution")
 # TODO: add legend (red = mean), function = plot histogramm with mean
 abline(v = mean(device_count$device_count), col = "red")
@@ -51,8 +67,8 @@ abline(v = mean(device_count$device_count), col = "red")
 
 ## New devices per interval
 ```{r}
-new_devs_count <- count_new_devices_interval(fixed_data, "time", "mac", "60 sec")
-plot_date_count(new_devs_count, "time", "dev_count", "60 secs")
+new_devs_count <- count_new_devices_interval(fixed_data, "time", "mac", round_secs)
+plot_date_count(new_devs_count, "time", "dev_count", round_secs)
 ```
 
 ## Cumsum: aggregate of new devices
@@ -62,29 +78,23 @@ devs_evolution <- devices_accumulated(new_devs_count, "mac_count", "time")
 plot_date_count(devs_evolution, "time", "devs_cumsum", "100 sec", geom_line())
 ```
 
-# Time between bursts. Distribution
-```{r}
-t_bursts <- time_between_bursts(fixed_data, "mac", "time")
-# histograms and means need round values, not dates
-t_bursts$t_burst <- as.numeric(t_bursts$t_burst)
-hist(t_bursts$t_burst, main="Average time between bursts")
-```
-
 # How many devices are generating the random macs?
 We will use a regression. We have previously obtained the average time between bursts for each mac. 
 
-We need to obtain a threshold called T_avg. It should be the minimum time in which, on average, a device emits its mac only once. Therefore we can assume that all different macs in that interval correspond to different devices.
+We need to obtain a threshold called T_avg. It should be the minimum time in which, on average, a device emits its mac only once. Therefore we can assume that all different macs in that interval correspond to different devices. For now, a small quantile suffices. Something better should be done (biggest interval that guarantees no repetitions, with some tolerance to get more data)
 
 We are also asumming that devices do not emmit both kind of macs at the same time
 
 We count random and fixed macs in each of the intervals, and pair the values as (N_random, N_fixed). A regression is applied to the whole set of pairs, thus obtaining the f(N_fixed) = devices_random
 
+About final report: say in LPRO presentation that T_avg would be more precise if it was computed considered which devices form the market emmit random macs
 ```{r}
-T_avg <- mean(t_bursts$t_burst)
-rounded_secs <- paste(round(T_avg), "secs")
-# to eliminate those with t_burst = 0
-type_count <- binned_mac_pairs(mac_data, "time", rounded_secs, t_bursts$mac)
+type_count <- binned_mac_pairs(mac_data, "time", "20 secs", t_bursts$mac)
 random_fixed_reg <- lm(random ~ fixed, data = type_count)
-
+summary(random_fixed_reg)
+plot(type_count$random ~ type_count$fixed, main = "Regression",
+     xlab = "Devices emitting fixed Macs", ylab = "Devices emitting Random Macs")
+abline(random_fixed_reg, col = "red")
 
 ```
+There is no correlation between random and fixed probe requests. Our idea is not valid
