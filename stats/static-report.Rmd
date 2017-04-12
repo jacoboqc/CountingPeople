@@ -11,12 +11,12 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F)
 # Whole data mac count
 ```{r}
 source("./static-analysis.R")
-# mac_data <- read_capture_file("./Captura_Peritos.csv").
-mac_data <- read_capture_server("http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs")
-
-#> names(mac_data)
+ mac_data <- read_capture_file("./Captura_Peritos.csv").
+# mac_data <- read_capture_server("http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs")
+fixed_data <- filter(mac_data, type == "fixed")
+#> names(fixed_data)
 ## [1] "mac"    "device" "ID"     "time"   "type"  
-mac_distro <- mac_count_distribution(mac_data, mac_col = "mac")
+mac_distro <- mac_count_distribution(fixed_data, mac_col = "mac")
 summary(mac_distro$mac_count)
 ```
 Datta summary shows most macs appear few times, less than 80 times. Histogramm will we displayed according to this.
@@ -27,15 +27,18 @@ hist(filter(mac_distro, mac_count <= q90)$mac_count, xlab = "Mac appearances",
 ```
 
 # Macs per time interval. 
-Both the previously seen ones and the new ones are counted. Returns same results as IPYNotebook
+Plots devices inside the system, that is, different macs seen per interval. Per interval, as well as distribution -i.e, occupance distribution. Returns same results as IPYNotebook function origin_activity
 ```{r}
-interval_mac_count <- count_macs_interval(mac_data, "time", "mac", "45 sec")
+interval_mac_count <- count_macs_interval(fixed_data, "time", "mac", "45 sec")
 plot_date_count(interval_mac_count, "time", "mac_count", "45 sec")
+hist(interval_mac_count$mac_count, main = "System occupation Distribution")
+# TODO: add legend (red = mean), function = plot histogramm with mean
+abline(v = mean(interval_mac_count$mac_count), col = "red")
 ```
 
 # New macs per interval
 ```{r}
-new_macs_count <- count_new_macs_interval(mac_data, "time", "mac", "45 sec")
+new_macs_count <- count_new_macs_interval(fixed_data, "time", "mac", "45 sec")
 plot_date_count(new_macs_count, "time", "mac_count", "45 secs")
 ```
 
@@ -46,7 +49,7 @@ plot_date_count(new_macs_evolution, "time", "macs_inside", "45 sec", geom_line()
 ```
 # Time between bursts. Distribution
 ```{r}
-t_bursts <- time_between_bursts(mac_data, "mac", "time")
+t_bursts <- time_between_bursts(fixed_data, "mac", "time")
 # histograms and means need round values, not dates
 t_bursts$t_burst <- as.numeric(t_bursts$t_burst)
 hist(t_bursts$t_burst, main="Average time between bursts")
@@ -65,7 +68,8 @@ We count random and fixed macs in each of the intervals, and pair the values as 
 T_avg <- mean(t_bursts$t_burst)
 rounded_secs <- paste(round(T_avg), "secs")
 # to eliminate those with t_burst = 0
-filtered <- binned_mac_pairs(mac_data, "time", rounded_secs, t_bursts$mac)
+type_count <- binned_mac_pairs(mac_data, "time", rounded_secs, t_bursts$mac)
+random_fixed_reg <- lm(random ~ fixed, data = type_count)
 
 
 ```

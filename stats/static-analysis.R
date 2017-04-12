@@ -111,8 +111,9 @@ time_between_bursts <- function(data, mac_col, time_col){
 binned_mac_pairs <- function(data, time_col, interval, mac_filter){
   binned <- bin_in_intervals(data, time_col, interval)
   # FIXME use SE
-  filtered_binned <- binned %>% 
-    select(time, mac, type) %>% filter(mac %in% mac_filter)
+  filtered_binned <- binned %>%  select(time, mac, type) %>% 
+    group_by_(time_col) %>% count_("type") %>% 
+    spread_("type", "n", fill = 0)
 }
 
 bin_in_intervals <- function(data, reference_col, interval){
