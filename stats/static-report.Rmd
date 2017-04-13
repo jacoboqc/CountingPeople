@@ -16,6 +16,7 @@ mac_data <- read_capture_file("~/Desktop/DTEC_no_associated.csv")
 # mac_data <- read_capture_server("http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs")
 fixed_data <- filter(mac_data, type == "fixed")
 #> names(fixed_data)
+
 ## [1] "mac"    "device" "ID"     "time"   "type"  
 mac_distro <- mac_count_distribution(fixed_data, mac_col = "mac")
 summary(mac_distro$mac_count)

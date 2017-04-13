@@ -7,7 +7,6 @@ import configparser
 import os.path
 import urllib
 import hashlib
-import time
 from datetime import datetime
 
 if len(sys.argv) == 1 or (len(sys.argv) > 1 and sys.argv[1] == 'help'):
@@ -43,13 +42,7 @@ def getmac(packet):
     if vendor:
         send_mac(packet, mac, "fixed", vendor)
     else:
-        macAsociated = asociate_mac(packet)
-        if macAsociated is not None:
-            send_mac(packet, macAsociated, "asociated", "Undefined")
-        else:
-            global macList
-            add_to_list(packet)
-            send_mac(packet, mac, "random", "Undefined")
+        send_mac(packet, mac, "random", "Undefined")
 
 
 def checkmac(mac):
@@ -66,25 +59,6 @@ def checkmac(mac):
                 if split and mac.upper().startswith(split[0]):
                         return split[1]
         return None
-
-def asociate_mac(packet):
-    global macList
-    for mac in macList:
-        timePacket = datetime_to_seconds(packet)
-        timePacketStored = stringtime_to_seconds(mac["time"])
-        diff = (timePacket - timePacketStored).total_seconds()
-        seqRecv = packet.wlan.seq
-        if int(seqRecv) <= int(mac["seq"]) + interval and int(seqRecv) >= int(mac["seq"]):
-            if diff < 175:
-                macList.remove(mac)
-                macJSON = {
-                    "mac": mac["mac"],
-                    "seq": packet.wlan.seq,
-                    "time": datetime_to_string(packet)
-                }
-                macList.append(macJSON)
-                return mac["mac"]
-    return None
 
 
 def datetime_to_seconds(packet):
@@ -119,16 +93,6 @@ def add_to_list(packet):
     macList.append(macJSON)
 
 
-def clean_list():
-    global macList
-    for index, mac in enumerate(macList):
-        timeMac = stringtime_to_seconds(mac["time"])
-        now = stringtime_to_seconds(time.strftime("%Y/%m/%d-%H:%M:%S"))
-        diff = (now - timeMac).total_seconds()
-        if diff > 170:
-            macList.remove(mac)
-
-
 try:
     if mode == 'live':
         interface = config.get('live', 'Interface')
@@ -137,7 +101,6 @@ try:
             interface=interface, display_filter='wlan.fc.type_subtype==4')
         for packet in capture.sniff_continuously():
             getmac(packet)
-            clean_list()
 
     elif mode == 'file':
         file = config.get('file', 'File Name')
