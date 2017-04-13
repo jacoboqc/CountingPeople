@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F)
 ```{r}
 source("./static-analysis.R")
 # mac_data <- read_capture_file("./Captura_Peritos.csv").
-mac_data <- read_capture_server("http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs")
+mac_data <- read_capture_server("http://localhost:3000/macs")
 
 #> names(mac_data)
 ## [1] "mac"    "device" "ID"     "time"   "type"  
