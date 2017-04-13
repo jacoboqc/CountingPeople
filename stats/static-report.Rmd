@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F)
 # Whole data mac count
 ```{r}
 source("./static-analysis.R")
- mac_data <- read_capture_file("~/Desktop/DTEC_no_associated.csv")
+mac_data <- read_capture_file("~/Desktop/DTEC_no_associated.csv")
 # mac_data <- read_capture_server("http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs")
 fixed_data <- filter(mac_data, type == "fixed")
 #> names(fixed_data)
@@ -37,10 +37,12 @@ t_bursts <- time_between_bursts(fixed_data, "mac", "time")
 # histograms and means need round values, not dates
 t_bursts$t_burst <- as.numeric(t_bursts$t_burst)
 hist(t_bursts$t_burst, main="Average time between bursts")
-T_avg <- mean(t_bursts$t_burst)
+T_avg <- quantile(t_bursts$t_burst, 0.8)
 round_secs <- paste(round(T_avg), "secs")
 ```
 
+The interval length for all operations is `r T_avg` seconds, which corresponds to a 80% quantile
+ 
 # Probe Requests per time interval. 
 Plots packets captured by the antennass, that is, different macs seen per interval. as well as its distribution. Returns same results as IPYNotebook function origin_activity.
 
@@ -89,7 +91,7 @@ We count random and fixed macs in each of the intervals, and pair the values as 
 
 About final report: say in LPRO presentation that T_avg would be more precise if it was computed considered which devices form the market emmit random macs
 ```{r}
-type_count <- binned_mac_pairs(mac_data, "time", "20 secs", t_bursts$mac)
+type_count <- binned_mac_pairs(mac_data, "time", "10 secs", t_bursts$mac)
 random_fixed_reg <- lm(random ~ fixed, data = type_count)
 summary(random_fixed_reg)
 plot(type_count$random ~ type_count$fixed, main = "Regression",
