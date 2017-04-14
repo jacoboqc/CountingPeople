@@ -19,7 +19,7 @@ source("../static-analysis.R")
 
 refresh <- 5
 # begin <- Sys.time() - 1200
-begin <- as.POSIXct("2017-03-06 17:46:21 CEST")
+begin <- as.POSIXct("2017-04-06 11:24:46 CEST")
 end <- begin + refresh
 mac_df <- data.frame()
 mac_temp <- data.frame()
@@ -83,8 +83,8 @@ shinyServer(function(input, output, session) {
   # amount of unique macs in the interval
   output$new_macs_per_second <- renderPlot({
     invalidateLater(sec2milis(refresh), session)
-    new_macs_count <- count_new_macs_interval(mac_temp, "time", "mac", "1 sec")
-    plot_date_count(new_macs_count, "time", "mac_count", "1 sec", theme)
+    new_macs_count <- count_new_devices_interval(mac_temp, "time", "mac", "1 sec")
+    plot_date_count(new_macs_count, "time", "dev_count", "1 sec", theme)
   })
   
   output$time_between_bursts <- renderPlot({

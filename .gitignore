@@ -20,3 +20,6 @@ stats/.ipynb_checkpoints/*
 # Other
 .swp
 .Rproj.user
+
+#Annalyse result
+stats/static-report.html
