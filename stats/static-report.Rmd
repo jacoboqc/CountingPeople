@@ -2,6 +2,7 @@
 title: "Static report"
 author: "Mauro"
 date: "6 4 2017"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -11,43 +12,92 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F)
 # Whole data mac count
 ```{r}
 source("./static-analysis.R")
-# mac_data <- read_capture_file("./Captura_Peritos.csv").
-mac_data <- read_capture_server("http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs")
+mac_data <- read_capture_file("~/Desktop/DTEC_no_associated.csv")
+# mac_data <- read_capture_server("http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs")
+fixed_data <- filter(mac_data, type == "fixed")
+#> names(fixed_data)
 
-#> names(mac_data)
 ## [1] "mac"    "device" "ID"     "time"   "type"  
-mac_distro <- mac_count_distribution(mac_data, mac_col = "mac")
+mac_distro <- mac_count_distribution(fixed_data, mac_col = "mac")
 summary(mac_distro$mac_count)
 ```
 Datta summary shows most macs appear few times, less than 80 times. Histogramm will we displayed according to this.
 ```{r}
-q90 <- quantile(mac_distro$mac_count, probs = 0.9)
-hist(filter(mac_distro, mac_count <= q90)$mac_count, xlab = "Mac appearances",
-     main = "Mac count distribution")
+q80 <- quantile(mac_distro$mac_count, probs = 0.8)
+hist(filter(mac_distro, mac_count <= q80)$mac_count, xlab = "Mac appearances",
+     main = "Mac count distribution Q_80")
 ```
 
-# Macs per time interval. 
-Both the previously seen ones and the new ones are counted. Returns same results as IPYNotebook
+# Time between bursts. Distribution.
+important stuff: we want at least 30 samples for the interval from now on. Therefore, best method would be choosing a 90% quantil or, if it is too big, the largest time interval that splits hour data in no less than 30 intervals.
+
+For now, average suffices. 
+
 ```{r}
-interval_mac_count <- count_macs_interval(mac_data, "time", "mac", "45 sec")
-plot_date_count(interval_mac_count, "time", "mac_count", "45 sec")
+t_bursts <- time_between_bursts(fixed_data, "mac", "time")
+# histograms and means need round values, not dates
+t_bursts$t_burst <- as.numeric(t_bursts$t_burst)
+hist(t_bursts$t_burst, main="Average time between bursts")
+T_avg <- quantile(t_bursts$t_burst, 0.8)
+round_secs <- paste(round(T_avg), "secs")
 ```
 
-# New macs per interval
+The interval length for all operations is `r T_avg` seconds, which corresponds to a 80% quantile
+ 
+# Probe Requests per time interval. 
+Plots packets captured by the antennass, that is, different macs seen per interval. as well as its distribution. Returns same results as IPYNotebook function origin_activity.
+
 ```{r}
-new_macs_count <- count_new_macs_interval(mac_data, "time", "mac", "45 sec")
-plot_date_count(new_macs_count, "time", "mac_count", "45 secs")
+interval_mac_count <- count_macs_interval(fixed_data, "time", "mac", round_secs)
+plot_date_count(interval_mac_count, "time", "mac_count", round_secs)
+hist(interval_mac_count$mac_count, main = "Probe Request Count Distribution")
+# TODO: add legend (red = mean), function = plot histogramm with mean
+abline(v = mean(interval_mac_count$mac_count), col = "red")
 ```
 
-## Cumsum
+# System occupation: devices meassured by interval
+Counts each different mac per interval to obtain the total amount of devices. Plots its distribution. Red line: mean, i.e, average ocupation of devices in our antenna range in that interval
+
+Interval chosen: average time burst. A more precise value could be chosen (see time burst calculation).
+
 ```{r}
-new_macs_evolution <- new_macs_accumulated(new_macs_count, "mac_count", "time")
-plot_date_count(new_macs_evolution, "time", "macs_inside", "45 sec", geom_line())
+device_count <- count_devices_interval(fixed_data, "time", "mac", round_secs)
+plot_date_count(device_count, "time", "device_count", round_secs)
+hist(device_count$device_count, main = "System Occupation Distribution")
+# TODO: add legend (red = mean), function = plot histogramm with mean
+abline(v = mean(device_count$device_count), col = "red")
 ```
-# Time between bursts. Distribution
+
+## New devices per interval
 ```{r}
-t_bursts <- time_between_bursts(mac_data, "mac", "time")
-hist(as.numeric(t_bursts$t_burst), main="Average time between bursts")
+new_devs_count <- count_new_devices_interval(fixed_data, "time", "mac", round_secs)
+plot_date_count(new_devs_count, "time", "dev_count", round_secs)
 ```
 
+## Cumsum: aggregate of new devices
+```{r}
+devs_evolution <- devices_accumulated(new_devs_count, "mac_count", "time")
+# note: time interval only affects plot, not calculation
+plot_date_count(devs_evolution, "time", "devs_cumsum", "100 sec", geom_line())
+```
 
+# How many devices are generating the random macs?
+We will use a regression. We have previously obtained the average time between bursts for each mac. 
+
+We need to obtain a threshold called T_avg. It should be the minimum time in which, on average, a device emits its mac only once. Therefore we can assume that all different macs in that interval correspond to different devices. For now, a small quantile suffices. Something better should be done (biggest interval that guarantees no repetitions, with some tolerance to get more data)
+
+We are also asumming that devices do not emmit both kind of macs at the same time
+
+We count random and fixed macs in each of the intervals, and pair the values as (N_random, N_fixed). A regression is applied to the whole set of pairs, thus obtaining the f(N_fixed) = devices_random
+
+About final report: say in LPRO presentation that T_avg would be more precise if it was computed considered which devices form the market emmit random macs
+```{r}
+type_count <- binned_mac_pairs(mac_data, "time", "10 secs", t_bursts$mac)
+random_fixed_reg <- lm(random ~ fixed, data = type_count)
+summary(random_fixed_reg)
+plot(type_count$random ~ type_count$fixed, main = "Regression",
+     xlab = "Devices emitting fixed Macs", ylab = "Devices emitting Random Macs")
+abline(random_fixed_reg, col = "red")
+
+```
+There is no correlation between random and fixed probe requests. Our idea is not valid

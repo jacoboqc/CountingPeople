@@ -1,7 +1,7 @@
 var config = {};
 
 config.dbAddres = 'mongodb://localhost/CountingPeople';
-config.debug = 'info';
+config.debug = 'debug';
 config.port = 3000;
 config.logFilePath = 'log/logger.log';
 config.logConsole = true;
