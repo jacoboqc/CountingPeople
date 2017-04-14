@@ -65,7 +65,7 @@ def read_csv(file):
 # In[10]:
 
 def consult_api():
-    url = "localhost:3000/macs/interval?start=2017/04/06-09:00:00"
+    url = "http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs/interval?start=2017/04/06-09:00:00"
     myReq = requests.get(url, headers={'Accept': 'text/csv'})
     if myReq.ok:
         return read_csv(io.StringIO(myReq.content.decode('utf-8')))
