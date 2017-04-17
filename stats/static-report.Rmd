@@ -20,7 +20,7 @@ fixed_data <- filter(mac_data, type == "fixed")
 mac_distro <- mac_count_distribution(fixed_data, mac_col = "mac")
 summary(mac_distro$mac_count)
 ```
-Datta summary shows most macs appear few times, less than 80 times. Histogramm will we displayed according to this.
+Datta summary shows most macs appear few times, less than 80 times. Histogramm will display just data under the 0.8 quantile.
 ```{r}
 q80 <- quantile(mac_distro$mac_count, probs = 0.8)
 hist(filter(mac_distro, mac_count <= q80)$mac_count, xlab = "Mac appearances",
@@ -28,16 +28,17 @@ hist(filter(mac_distro, mac_count <= q80)$mac_count, xlab = "Mac appearances",
 ```
 
 # Time between bursts. Distribution.
-important stuff: we want at least 30 samples for the interval from now on. Therefore, best method would be choosing a 90% quantil or, if it is too big, the largest time interval that splits hour data in no less than 30 intervals.
+From now on we will sample data in intervals of equal length, and then operate. All plots show the result of this opetations divided by intervals.
 
-For now, average suffices. 
+As a rule of thumb we need to provide at least 30 different meassurements for any calculation/distribution to make it valid. Therefore, be L our whole timespan for the dataset, and T our interval length, **L/T >= 30**. At the same time, T must be big enough to let as many devices as possible emit one probe request.
+
 
 ```{r}
-t_bursts <- time_between_bursts(fixed_data, "mac", "time")
+t_burst <- time_between_bursts(fixed_data, "mac", "time")
 # histograms and means need round values, not dates
-t_bursts$t_burst <- as.numeric(t_bursts$t_burst)
-hist(t_bursts$t_burst, main="Average time between bursts")
-T_avg <- quantile(t_bursts$t_burst, 0.8)
+t_burst$avg_secs <- as.numeric(t_burst$avg_secs)
+hist(t_burst$avg_secs, main="Average time between bursts")
+T_avg <- quantile(t_burst$avg_secs, 0.8)
 round_secs <- paste(round(T_avg), "secs")
 ```
 
@@ -91,7 +92,7 @@ We count random and fixed macs in each of the intervals, and pair the values as 
 
 About final report: say in LPRO presentation that T_avg would be more precise if it was computed considered which devices form the market emmit random macs
 ```{r}
-type_count <- binned_mac_pairs(mac_data, "time", "10 secs", t_bursts$mac)
+type_count <- binned_mac_pairs(mac_data, "time", "10 secs", t_burst$mac)
 random_fixed_reg <- lm(random ~ fixed, data = type_count)
 summary(random_fixed_reg)
 plot(type_count$random ~ type_count$fixed, main = "Regression",

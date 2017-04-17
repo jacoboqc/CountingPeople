@@ -113,18 +113,29 @@ count_new_devices_interval <- function(data, time_col, mac_col, interval){
 
 #' Evolution of new macs seen by the system. Always increases (not devices inside)
 #' @param count_col string or number. Column with counted macs
-#' @param data dataframe
+#' @returns data frame with a devs_cumsum column instead of a sampled count
 devices_accumulated <- function(data, count_col, time_col){
   # FIXME: time, mac_count is NSE, must be converted somehow
   data %>% transmute(time, devs_cumsum = cumsum(dev_count)) 
 }
 
+#' For each mac, returns average time between probe request, also called burst
+#' @param mac_col string or number. Column with mac addresses
+#' @param time_col string or number. Column with timestamps
+#' @details timediff column with difference in seconds with the previous 
+#'          probe request. 
+#' @returns dataframe with two columns:
+#'          -"mac_col": mac addresses
+#'          -avg_burst: average time difference for each mac
 time_between_bursts <- function(data, mac_col, time_col){
-  # FIXME: convert time_col and type to SE
+  # FIXME: convert time_col and time to SE
   xx <- data %>% group_by_(mac_col) %>%
+    # timediff: time diference with the following probe request.
+    # time vector is one position up, then substracted
     mutate(timediff = difftime(time,lead(time), units="secs")) %>%
-    filter(!is.na(timediff)) %>% summarise(t_burst = mean(timediff)) %>%
-    filter(t_burst > 0)
+    # 0's and NA are removed before mean calculation
+    filter(!is.na(timediff)) %>% filter(timediff > 0) %>%
+    summarise(avg_secs = mean(timediff))
 }
 
 binned_mac_pairs <- function(data, time_col, interval, mac_filter){
