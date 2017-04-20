@@ -43,8 +43,7 @@ mac_count_distribution <- function(data, mac_col){
 #'          many macs per interval
 #' @example: distinct_mac(df, "time", "mac", "2 sec")
 distinct_macs_interval <- function(data, time_col, mac_col, interval){
-  intervals <- cut(data[[time_col]], interval)
-  data[,time_col] <- intervals
+  data <- split_in_intervals(data, time_col, interval)
   counted <- data %>% group_by_(time_col) %>% count_(mac_col)
   names(counted) <- c(time_col, mac_col, "mac_count")
   counted[,time_col] <- as.POSIXct(counted[,time_col])
@@ -61,8 +60,7 @@ distinct_macs_interval <- function(data, time_col, mac_col, interval){
 #'          the timestamps are not unique, as many as macs
 #' @example: distinct_mac(df, "time", "mac", "2 sec")
 count_macs_interval <- function(data, time_col, mac_col, interval){
-  intervals <- cut(data[[time_col]], interval)
-  data[,time_col] <- intervals
+  data <- split_in_intervals(data, time_col, interval)
   counted <- data %>% group_by_(time_col) %>% count_(mac_col) %>% summarise(mac_count = sum(n))
   # note: every operation turns data into a factor.
   counted[[time_col]] <- as.POSIXct(counted[[time_col]])
@@ -78,8 +76,7 @@ count_macs_interval <- function(data, time_col, mac_col, interval){
 #'          the timestamps are not unique, as many as macs
 #' @example: distinct_mac(df, "time", "mac", "2 sec")
 count_devices_interval <- function(data, time_col, mac_col, interval){
-  intervals <- cut(data[[time_col]], interval)
-  data[,time_col] <- intervals
+  data <- split_in_intervals(data, time_col, interval)
   # FIXME: use standard evaluation
   counted <- data %>% group_by_(time_col) %>% 
     summarise(device_count = n_distinct(mac))
@@ -98,13 +95,12 @@ count_devices_interval <- function(data, time_col, mac_col, interval){
 #'          the timestamps are not unique, as many as macs
 #' @example: distinct_mac(df, "time", "mac", "2 sec")
 count_new_devices_interval <- function(data, time_col, mac_col, interval){
-  intervals <- cut(data[[time_col]], interval)
-  data[,time_col] <- intervals
+  data <- split_in_intervals(data, time_col, interval)
   # FIXME: time is the column name in NSE (non standard evaluation), should 
   # be obtained from time_col somehow
   counted <- data %>% group_by_(mac_col) %>% top_n(-1, time) %>% ungroup() %>% 
     distinct_(mac_col,time_col) %>% # top_n does not remove duplicates
-    # so far, selected first appearances for each mac
+    # so far, selected first appearances for each mac in its interval
     # then macs are counted for each interval
     group_by_(time_col) %>% count_(mac_col) %>% summarise(dev_count = sum(n))
   counted[[time_col]] <- as.POSIXct(counted[[time_col]])
@@ -133,20 +129,23 @@ time_between_bursts <- function(data, mac_col, time_col){
     # timediff: time diference with the following probe request.
     # time vector is one position up, then substracted
     mutate(timediff = difftime(time,lead(time), units="secs")) %>%
-    # 0's and NA are removed before mean calculation
-    filter(!is.na(timediff)) %>% filter(timediff > 0) %>%
-    summarise(avg_secs = mean(timediff))
+    # NA are removed before mean calculation, and 0's after 
+    filter(!is.na(timediff)) %>% summarise(avg_secs = mean(timediff)) %>%
+    # 0 removal should be done theoretically before mean calculation
+    filter(avg_secs > 0)
+  xx$avg_secs <- as.numeric(xx$avg_secs)
+  return(xx)
 }
 
 binned_mac_pairs <- function(data, time_col, interval, mac_filter){
-  binned <- bin_in_intervals(data, time_col, interval)
+  binned <- split_in_intervals(data, time_col, interval)
   # FIXME use SE
   filtered_binned <- binned %>%  select(time, mac, type) %>% 
     group_by_(time_col) %>% count_("type") %>% 
     spread_("type", "n", fill = 0)
 }
 
-bin_in_intervals <- function(data, reference_col, interval){
+split_in_intervals <- function(data, reference_col, interval){
   intervals <- cut(data[[reference_col]], interval)
   data[,reference_col] <- as.POSIXct(intervals)
   return(data)

@@ -27,22 +27,61 @@ hist(filter(mac_distro, mac_count <= q80)$mac_count, xlab = "Mac appearances",
      main = "Mac count distribution Q_80")
 ```
 
-# Time between bursts. Distribution.
+# Time between bursts.
+
 From now on we will sample data in intervals of equal length, and then operate. All plots show the result of this opetations divided by intervals.
 
 As a rule of thumb we need to provide at least 30 different meassurements for any calculation/distribution to make it valid. Therefore, be L our whole timespan for the dataset, and T our interval length, **L/T >= 30**. At the same time, T must be big enough to let as many devices as possible emit one probe request.
 
-
 ```{r}
 t_burst <- time_between_bursts(fixed_data, "mac", "time")
 # histograms and means need round values, not dates
-t_burst$avg_secs <- as.numeric(t_burst$avg_secs)
-hist(t_burst$avg_secs, main="Average time between bursts")
-T_avg <- quantile(t_burst$avg_secs, 0.8)
-round_secs <- paste(round(T_avg), "secs")
+burst_diff <- t_burst$avg_secs
+# L: time range for the meassurements
+L <- as.numeric(difftime(max(mac_data$time),min(mac_data$time), units="secs"))
+# T: sampling interval. Must guarantee at least 30 samples
+T <- max(burst_diff)
+if(L/T < 30){
+  T <- L/30
+}
+round_secs <- paste(floor(T), "secs")
 ```
 
-The interval length for all operations is `r T_avg` seconds, which corresponds to a 80% quantile
+The interval length for all operations is `r L` seconds, which guaranties 30 intervals for sampling
+
+## Distribution
+
+```{r}
+hist(burst_diff, main="Average time between bursts", prob=T)
+legend("topright", col = c("blue", "red"), lty=c(1,1), legend = c("Kernel Estimation", "Exponential Distribution"))
+lines(density(burst_diff), col="blue")
+# Plotting theoretical exponential density function
+lines(dexp(seq(0, max(burst_diff), by=1), rate = 1/mean(burst_diff)), 
+      col="red")
+burst_avg <- mean(burst_diff)
+```
+
+Histogram and kernel estimation shows an exponential distribution for time between arrivals for fixed adresses. Therefore, we can asume that arrivals are a Poisson proccess, and all its properties: independence in disjunct intervals, iid, independent sum of processes.
+
+# Random Macs estimation
+
+Time between arrivals for fixed addresses follows an exponential distribution with average `r burst_avg`, and a lambda parameter `r 1/burst_avg` (the inverse of the average). This lambda is the parameter for the Poisson distribution of the arrivals.
+
+We can assume that random macs follow the same distribution with the same parameters. Therefore, for a series of disjunct intervals of length T, the probability of having n arrivals is **insert Poisson distribution formulae**, for one source. Its expected value E(X) is **E(x) =  lambda*T**. If there are N devices, and because of the sum of independent poisson variables, the expected number of observations should be that, times the sources: **E(x) = N*lambda*T**, which we could approximate with a large set of samples thanks to the law of large numbers.
+```{r}
+lambda = 1/burst_avg
+random_macs_observations <- mac_data %>% filter(type == "random") %>%
+  distinct(mac, time) %>% split_in_intervals(., "time", round_secs) %>%
+  group_by(time) %>% count(mac) %>% summarise(random_count = sum(n))
+lambda = 1/burst_avg
+N = mean(random_macs_observations$random_count)/lambda/T
+# random_macs_observations <- split_in_intervals(random_macs_observations, "time", 
+  #   group_by_(time_col) %>% count_(mac_col) %>% summarise(dev_count = sum(n))
+  # counted[[time_col]] <- as.POSIXct(counted[[time_col]])
+  # counted
+```
+
+
  
 # Probe Requests per time interval. 
 Plots packets captured by the antennass, that is, different macs seen per interval. as well as its distribution. Returns same results as IPYNotebook function origin_activity.
@@ -100,4 +139,5 @@ plot(type_count$random ~ type_count$fixed, main = "Regression",
 abline(random_fixed_reg, col = "red")
 
 ```
+
 There is no correlation between random and fixed probe requests. Our idea is not valid
