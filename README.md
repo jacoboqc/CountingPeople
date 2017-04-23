@@ -8,6 +8,7 @@ Consists of several modules:
 
 - `receiver`: Python script for sniffing and detecting devices. Should be deployed in a Raspberry Pi.
 - `server`: Node.js + MongoDB database for handling all the data fetched by the receivers. Can be deployed in a personal computer or a server in the cloud.
+- `stats`: Statistics for activity in the system, done in R, including a graphical front-end.
 
 ## Requirements
 
