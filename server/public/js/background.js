@@ -116,7 +116,7 @@ function updateData() {
     var dateRequestStart = date.getFullYear() + '/' + (date.getMonth()+1) + '/' + date.getDate() + '-' + date.getHours() + ':' + date.getMinutes() + ':' + sec;
     var dateRequestEnd = date.getFullYear() + '/' + (date.getMonth()+1) + '/' + date.getDate() + '-' + date.getHours() + ':' + date.getMinutes() + ':' + sec;
 
-    jQuery.get('http://localhost:3000/macs/interval?start=' + dateRequestStart + '&end=' + dateRequestEnd, function (response) {
+    jQuery.get('http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs/interval?start=' + dateRequestStart + '&end=' + dateRequestEnd, function (response) {
         //console.warn(response);
         //jQuery.get('http://localhost:3000/macs/interval?start={"time":"1993/01/01-22:10:30"}&end={"time":"2000/01/01-22:10:30"}', function (response) {
         series[2].addPoint([x, response.length], true, false);
@@ -124,9 +124,8 @@ function updateData() {
 
     });
 
-    jQuery.get('http://localhost:3000/macs', function (response) {
+    jQuery.get('http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs', function (response) {
         series[0].addPoint([x, response.length], true, false);
-
         let totalOrigins = 0;
         response.forEach(function (mac) {
             totalOrigins += mac.origin.length;

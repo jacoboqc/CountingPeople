@@ -9,7 +9,7 @@ getAllMacs <- function(url, timeformat = "%Y/%m/%d-%H:%M:%S"){
   return(data)
 }
 
-getAllMacsByTimestamp <- function(endpoint = "http://localhost:3000/macs/interval" ,
+getAllMacsByTimestamp <- function(endpoint = "http://ec2-54-72-240-166.eu-west-1.compute.amazonaws.com:3000/macs/interval" ,
                                   begin, end, timeformat = "%Y/%m/%d-%H:%M:%S"){
   # if none specified, function default is used
   begin <- format(begin, timeformat)
