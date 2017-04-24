@@ -1,7 +1,5 @@
 ---
 title: "Static report"
-author: "Mauro"
-date: "6 4 2017"
 ---
 
 ```{r setup, include=FALSE}
