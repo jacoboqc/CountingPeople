@@ -2,6 +2,8 @@
 
 This project aims to provide a simple way for counting people in big crowds, detecting the Wi-Fi signal from their personal smartphones.
 
+[![asciicast](https://asciinema.org/a/4op87z0pyb2u1vavfa3h82jz7.png)](https://asciinema.org/a/4op87z0pyb2u1vavfa3h82jz7)
+
 ## Structure
 
 Consists of several modules:
