@@ -38,6 +38,7 @@ shinyUI(navbarPage(
       # instant
       tabPanel("Now", fluidPage(
         fluidRow(column(width = 12, textOutput("time_evol"))),
+        h3(textOutput("new_devices_interval")),
         fluidRow(column(width = 6,  titlePanel("Mac count per second")),
                  column(width = 6,  titlePanel("New macs per second"))),
         fluidRow(column(width = 6,  plotOutput("macs_per_second")),

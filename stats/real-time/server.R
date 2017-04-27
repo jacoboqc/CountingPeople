@@ -48,8 +48,9 @@ shinyServer(function(input, output, session) {
     mac_df <<- rbind(mac_df, mac_temp)
     cat(file=stderr(), "names of permanent and temporal dataset", 
         names(mac_df), names(mac_temp), "\n")
-    print(begin)
-    print(end)
+    cat("Actual annalyse interval from ")
+    cat(format(begin, "%X"), " to ")
+    cat(format(end, "%X"))
     begin <<- begin + refresh
     end <<- end + refresh
   })
@@ -66,6 +67,14 @@ shinyServer(function(input, output, session) {
     interval_mac_count <- count_macs_interval(mac_df, "time", "mac", "1 sec")
     plot_date_count(interval_mac_count, "time", "mac_count", "1 sec", theme)
     
+  })
+  
+  output$new_devices_interval <- renderPrint({
+    invalidateLater(sec2milis(refresh), session)
+    new_macs_count <- count_new_devices_interval(mac_temp, "time", "mac", "1 sec")
+    new_macs_count[ is.na(new_macs_count) ] <- 0
+
+    cat("New devices in the last interval: ", (sum(new_macs_count[, 2]) / nrow(new_macs_count)))
   })
   
   output$time_per_mac <- renderPlot({
