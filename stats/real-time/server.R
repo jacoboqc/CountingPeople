@@ -19,7 +19,7 @@ source("../static-analysis.R")
 
 refresh <- 5
 # begin <- Sys.time() - 1200
-begin <- as.POSIXct("2017-04-06 11:24:46 CEST")
+begin <- as.POSIXct("2017/04/06 09:24:46 CEST")
 end <- begin + refresh
 mac_df <- data.frame()
 mac_temp <- data.frame()
@@ -73,7 +73,6 @@ shinyServer(function(input, output, session) {
     invalidateLater(sec2milis(refresh), session)
     new_macs_count <- count_new_devices_interval(mac_temp, "time", "mac", "1 sec")
     new_macs_count[ is.na(new_macs_count) ] <- 0
-
     cat("New devices in the last interval: ", (sum(new_macs_count[, 2]) / nrow(new_macs_count)))
   })
   
@@ -99,7 +98,7 @@ shinyServer(function(input, output, session) {
   output$time_between_bursts <- renderPlot({
     invalidateLater(sec2milis(refresh), session)
     t_bursts <- time_between_bursts(mac_df, "mac", "time")
-    hist(as.numeric(t_bursts$t_burst), main="Average time between bursts", col="#99ccff", fill="#99ccff")
+    hist(as.numeric(t_bursts$avg_secs), main="Average time between bursts", col="#99ccff", fill="#99ccff")
   })
 
   # Generates the static report
